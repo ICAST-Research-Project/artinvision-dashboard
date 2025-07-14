@@ -7,16 +7,65 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AccountType {
+  MUSEUM_ADMIN
+  CURATOR
+  ARTIST
+}
+
 model User {
-  id            String    @id @default(cuid())
+  id            String      @id @default(cuid())
   name          String?
-  email         String    @unique
+  phone         String
+  email         String      @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  accounts      Account[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  accountType   AccountType
+
+  accounts Account[]
+
+  museumAdmin MuseumAdmin?
+  curator     Curator?
+  artist      Artist?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MuseumAdmin {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String   @unique
+  museumName String
+  about      String
+  address    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Curator {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  address   String
+  about     String
+  connect   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Artist {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String   @unique
+  address    String
+  bio        String
+  background String
+  education  String
+  connect    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Account {
