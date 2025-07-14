@@ -12,5 +12,3 @@ export const authRoutes = ["/auth/login", "/auth/register"];
  * Routes that starty with this prefix ae used for API
  */
 export const apiAuthPrefix = "/api/auth";
-
-export const DEFAULT_LOGIN_REDIRECT = "/settings";

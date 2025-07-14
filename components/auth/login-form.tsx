@@ -1,10 +1,14 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
-import { CardWrapper } from "./card-wrapper";
-import { LoginSchema } from "@/schemas";
-import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { signIn, getSession } from "next-auth/react";
+import { z } from "zod";
+
+import { LoginSchema } from "@/schemas";
+import { CardWrapper } from "./card-wrapper";
 import {
   Form,
   FormControl,
@@ -16,14 +20,12 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { FormError } from "../form-error";
-import { FormSuccess } from "../form-success";
-import { login } from "@/actions/login";
-import { useState, useTransition } from "react";
 
 export const LoginForm = () => {
-  const [error, setError] = useState<string | undefined>("");
-  const [success, setSuccess] = useState<string | undefined>("");
+  const router = useRouter();
+  const [error, setError] = useState<string>();
   const [isPending, startTransition] = useTransition();
+
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
@@ -33,15 +35,35 @@ export const LoginForm = () => {
   });
 
   const onSubmit = (values: z.infer<typeof LoginSchema>) => {
-    setError("");
-    setSuccess("");
-    startTransition(() => {
-      login(values).then((data) => {
-        setError(data.error);
-        setSuccess(data.success);
+    setError(undefined);
+
+    startTransition(async () => {
+      const res = await signIn("credentials", {
+        redirect: false,
+        email: values.email,
+        password: values.password,
       });
+
+      if (!res?.ok) {
+        setError("Invalid email or password");
+        return;
+      }
+
+      const session = await getSession();
+      const acct = session?.user?.accountType;
+
+      if (acct === "MUSEUM_ADMIN") {
+        router.push("/museum/dashboard");
+      } else if (acct === "CURATOR") {
+        router.push("/curator/dashboard");
+      } else if (acct === "ARTIST") {
+        router.push("/artist/dashboard");
+      } else {
+        router.push("/");
+      }
     });
   };
+
   return (
     <CardWrapper
       headerLabel="Welcome back!"
@@ -89,10 +111,11 @@ export const LoginForm = () => {
               )}
             />
           </div>
-          <FormError message={error} />
-          <FormSuccess message={success} />
+
+          {error && <FormError message={error} />}
+
           <Button disabled={isPending} type="submit" className="w-full">
-            Login
+            {isPending ? "Signing in…" : "Login"}
           </Button>
         </form>
       </Form>

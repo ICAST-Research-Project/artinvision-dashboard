@@ -1,10 +1,12 @@
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
+import React from "react";
 
-export default async function Page() {
+const page = async () => {
   const session = await auth();
   return (
     <div>
+      Artist DashBoard
       {JSON.stringify(session)}
       <form
         action={async () => {
@@ -17,4 +19,6 @@ export default async function Page() {
       </form>
     </div>
   );
-}
+};
+
+export default page;
