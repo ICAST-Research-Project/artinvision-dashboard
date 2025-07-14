@@ -2,7 +2,7 @@
 
 import { RegisterSchema } from "@/schemas";
 import * as z from "zod";
-import bcrypt from "bcrypt";
+import bcryptjs from "bcryptjs";
 import { db } from "@/lib/db";
 import { getUserByEmail } from "@/data/user";
 
@@ -17,7 +17,7 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
     return { error: "Email already in use!" };
   }
 
-  const hashed = await bcrypt.hash(data.password, 10);
+  const hashed = await bcryptjs.hash(data.password, 10);
 
   let profileCreate;
   switch (data.accountType) {
