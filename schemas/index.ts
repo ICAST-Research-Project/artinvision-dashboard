@@ -5,12 +5,6 @@ export const LoginSchema = z.object({
   password: z.string().min(1, { message: "Password is required" }),
 });
 
-// export const RegisterSchema = z.object({
-//   email: z.email({ message: "Email is required" }),
-//   password: z.string().min(6, { message: "Minimum 6 characters required" }),
-//   name: z.string().min(1, { message: "Name is required" }),
-// });
-
 const Base = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   email: z.email({ message: "A valid email is required" }),
@@ -40,3 +34,23 @@ export const RegisterSchema = z.discriminatedUnion("accountType", [
     connect: z.string().optional(),
   }),
 ]);
+
+export const artworkSchema = z.object({
+  title: z.string().trim().min(2).max(100),
+  description: z.string().min(10),
+  artist: z.string().trim().min(1).max(100),
+  // imageUrl: z.string(),
+  categoryId: z.string(),
+});
+
+export const CategorySchema = z.object({
+  id: z.string().nonempty(),
+  name: z.string().min(1),
+});
+
+export const CreateCategorySchema = z.object({
+  name: z.string().min(1),
+});
+
+export type Category = z.infer<typeof CategorySchema>;
+export type CreateCategory = z.infer<typeof CreateCategorySchema>;

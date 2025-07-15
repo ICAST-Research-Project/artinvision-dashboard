@@ -89,3 +89,19 @@ model Account {
 
   @@unique([provider, providerAccountId])
 }
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  artworks Artwork[]
+}
+
+model Artwork {
+  id          String   @id @default(cuid())
+  title       String   @db.VarChar(100)
+  description String
+  artist      String   @db.VarChar(100)
+  // imageUrl    String
+  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId  String
+}
