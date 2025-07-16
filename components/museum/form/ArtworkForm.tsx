@@ -20,6 +20,7 @@ import Dropdown from "./Dropdown";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { createArtwork } from "@/actions/artwork";
+import { Uploader } from "./Uploader";
 
 // interface Props extends Partial<Artwork> {
 //   type?: "create" | "update";
@@ -156,6 +157,8 @@ const ArtworkForm = () => {
             </FormItem>
           )}
         />
+
+        <Uploader />
 
         <Button
           type="submit"
