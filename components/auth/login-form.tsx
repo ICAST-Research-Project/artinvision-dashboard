@@ -44,7 +44,7 @@ export const LoginForm = () => {
         password: values.password,
       });
 
-      if (!res?.ok) {
+      if (!res?.ok || res?.error) {
         setError("Invalid email or password");
         return;
       }
@@ -55,9 +55,9 @@ export const LoginForm = () => {
       if (acct === "MUSEUM_ADMIN") {
         router.push("/museum");
       } else if (acct === "CURATOR") {
-        router.push("/curator");
+        router.push("/curator/dashboard");
       } else if (acct === "ARTIST") {
-        router.push("/artist");
+        router.push("/artist/dashboard");
       } else {
         router.push("/");
       }
@@ -115,7 +115,26 @@ export const LoginForm = () => {
           {error && <FormError message={error} />}
 
           <Button disabled={isPending} type="submit" className="w-full">
-            {isPending ? "Signing in…" : "Login"}
+            {isPending ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5 mr-2 inline"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                </svg>
+                Signing in…
+              </>
+            ) : (
+              "Login"
+            )}
           </Button>
         </form>
       </Form>
