@@ -34,9 +34,9 @@ const ArtworkForm = () => {
     defaultValues: {
       title: "",
       description: "",
-      //   imageUrl: "",
       artist: "",
       categoryId: "",
+      imageUrls: [],
     },
   });
 
@@ -158,7 +158,15 @@ const ArtworkForm = () => {
           )}
         />
 
-        <Uploader />
+        <FormField
+          control={form.control}
+          name="imageUrls"
+          render={({ field }) => (
+            <FormControl>
+              <Uploader onUploadComplete={field.onChange} value={field.value} />
+            </FormControl>
+          )}
+        />
 
         <Button
           type="submit"

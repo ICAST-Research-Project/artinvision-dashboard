@@ -6,7 +6,7 @@ export type artworkParams = {
   title: string;
   artist: string;
   description: string;
-  //   imageUrl: string
+  imageUrls: string[];
   categoryId: string;
 };
 
@@ -15,6 +15,7 @@ export const createArtwork = async ({
   artist,
   description,
   categoryId,
+  imageUrls,
 }: artworkParams) => {
   try {
     const newArtwork = await db.artwork.create({
@@ -23,6 +24,12 @@ export const createArtwork = async ({
         artist: artist,
         description: description,
         categoryId: categoryId,
+        images: {
+          create: imageUrls.map((url) => ({ url })),
+        },
+      },
+      include: {
+        images: true,
       },
     });
     return {

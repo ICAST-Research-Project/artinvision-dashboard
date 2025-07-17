@@ -39,7 +39,7 @@ export const artworkSchema = z.object({
   title: z.string().trim().min(2).max(100),
   description: z.string().min(10),
   artist: z.string().trim().min(1).max(100),
-  // imageUrl: z.string(),
+  imageUrls: z.array(z.url()).min(1, "Upload at least one image"),
   categoryId: z.string(),
 });
 
@@ -47,7 +47,7 @@ export const CategorySchema = z.object({
   id: z.string().nonempty(),
   name: z.string().min(1),
 });
-
+  
 export const CreateCategorySchema = z.object({
   name: z.string().min(1),
 });

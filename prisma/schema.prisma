@@ -97,11 +97,18 @@ model Category {
 }
 
 model Artwork {
-  id          String   @id @default(cuid())
-  title       String   @db.VarChar(100)
+  id          String         @id @default(cuid())
+  title       String         @db.VarChar(100)
   description String
-  artist      String   @db.VarChar(100)
-  // imageUrl    String
-  category    Category @relation(fields: [categoryId], references: [id])
+  artist      String         @db.VarChar(100)
+  images      ArtworkImage[]
+  category    Category       @relation(fields: [categoryId], references: [id])
   categoryId  String
+}
+
+model ArtworkImage {
+  id        String  @id @default(cuid())
+  url       String
+  artwork   Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  artworkId String
 }

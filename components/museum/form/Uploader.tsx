@@ -1,15 +1,23 @@
 /* eslint-disable @next/next/no-img-element */
+
 "use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Loader2, Trash2 } from "lucide-react";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-export function Uploader() {
+interface UploaderProps {
+  value: string[];
+  onUploadComplete: (urls: string[]) => void;
+}
+
+const BUCKET_BASE = `${process.env.NEXT_PUBLIC_AWS_ENDPOINT_URL_S3}/${process.env.NEXT_PUBLIC_S3_BUCKET_NAME}`;
+
+export function Uploader({ value, onUploadComplete }: UploaderProps) {
   const [files, setFiles] = useState<
     Array<{
       id: string;
@@ -22,6 +30,18 @@ export function Uploader() {
       objectUrl?: string;
     }>
   >([]);
+
+  useEffect(() => {
+    const urls = files
+      .map((f) => (f.key ? `${BUCKET_BASE}/${f.key}` : null))
+      .filter((u): u is string => !!u);
+
+    if (JSON.stringify(urls) !== JSON.stringify(value)) {
+      setTimeout(() => {
+        onUploadComplete(urls);
+      }, 0);
+    }
+  }, [files, onUploadComplete, value]);
 
   async function removeFile(fileId: string) {
     try {
@@ -53,7 +73,15 @@ export function Uploader() {
       }
 
       toast.success("File removed successfully");
-      setFiles((prevFiles) => prevFiles.filter((f) => f.id !== fileId));
+      // setFiles((prevFiles) => prevFiles.filter((f) => f.id !== fileId));
+      setFiles((prev) => {
+        const remaining = prev.filter((f) => f.id !== fileId);
+        // const urls = remaining
+        //   .map((f) => (f.key ? `${BUCKET_BASE}/${f.key}` : null))
+        //   .filter((u): u is string => !!u);
+        // onUploadComplete(urls);
+        return remaining;
+      });
     } catch {
       toast.error("Failed to remove file from storage.");
       setFiles((prevFiles) =>
@@ -113,19 +141,32 @@ export function Uploader() {
         };
         xhr.onload = () => {
           if (xhr.status == 200 || xhr.status == 204) {
-            setFiles((prevFiles) =>
-              prevFiles.map((f) =>
-                f.file === file
-                  ? {
-                      ...f,
-                      uploading: false,
-                      progress: 100,
+            // setFiles((prevFiles) =>
+            //   prevFiles.map((f) =>
+            //     f.file === file
+            //       ? {
+            //           ...f,
+            //           uploading: false,
+            //           progress: 100,
 
-                      error: false,
-                    }
+            //           error: false,
+            //         }
+            //       : f
+            //   )
+            // );
+            setFiles((prev) => {
+              const next = prev.map((f) =>
+                f.file === file
+                  ? { ...f, uploading: false, progress: 100, error: false, key }
                   : f
-              )
-            );
+              );
+              // build full URLs array
+              // const urls = next
+              //   .map((f) => (f.key ? `${BUCKET_BASE}/${f.key}` : null))
+              //   .filter((u): u is string => !!u);
+              // onUploadComplete(urls);
+              return next;
+            });
             toast.success("File uplaoded successfully");
             resolve();
           } else {
