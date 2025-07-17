@@ -39,13 +39,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface DataTableProps<TData, TValue> {
+interface DataTableProps<TData extends { id: string }, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   categories?: string[];
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends { id: string }, TValue>({
   columns,
   data,
   categories = [],
@@ -78,10 +78,16 @@ export function DataTable<TData, TValue>({
   const currentFilterValue =
     (categoryColumn?.getFilterValue() as string) ?? "all";
 
+  const publishedColumn = table.getColumn("published");
+  // derive the <Select>ʼs string value from the boolean filterValue
+  const currentPublished = (() => {
+    const v = publishedColumn?.getFilterValue();
+    return v === true ? "published" : v === false ? "unpublished" : "all";
+  })();
+
   return (
     <div>
       <div className="flex items-center py-4">
-        {/* Title filter */}
         <Input
           placeholder="Filter titles..."
           value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
@@ -94,7 +100,6 @@ export function DataTable<TData, TValue>({
           <Select
             value={currentFilterValue}
             onValueChange={(val) => {
-              // when the user picks "all", clear the filter
               categoryColumn?.setFilterValue(val === "all" ? undefined : val);
             }}
           >
@@ -102,7 +107,6 @@ export function DataTable<TData, TValue>({
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              {/* use a non‐empty value here */}
               <SelectItem value="all">All Categories</SelectItem>
               {categories.map((cat) => (
                 <SelectItem key={cat} value={cat}>
@@ -113,7 +117,31 @@ export function DataTable<TData, TValue>({
           </Select>
         </div>
 
-        {/* Columns menu */}
+        {/* Published/Unpublished dropdown filter */}
+        <div className="ml-4 max-w-xs">
+          <Select
+            value={currentPublished}
+            onValueChange={(val) => {
+              if (val === "all") {
+                publishedColumn?.setFilterValue(undefined);
+              } else if (val === "published") {
+                publishedColumn?.setFilterValue(true);
+              } else {
+                publishedColumn?.setFilterValue(false);
+              }
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="published">Published</SelectItem>
+              <SelectItem value="unpublished">Unpublished</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
@@ -160,7 +188,7 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.original.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(

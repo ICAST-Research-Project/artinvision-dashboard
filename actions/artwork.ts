@@ -48,6 +48,7 @@ export const createArtwork = async ({
 
 export async function getAllArtworks() {
   return await db.artwork.findMany({
+    orderBy: { createdAt: "desc" },
     include: {
       category: { select: { id: true, name: true } },
       images: { select: { id: true, url: true } },
@@ -61,5 +62,12 @@ export async function getArtworkById(id: string) {
       category: { select: { id: true, name: true } },
       images: { select: { id: true, url: true } },
     },
+  });
+}
+
+export async function toggleArtworkPublished(id: string, published: boolean) {
+  return await db.artwork.update({
+    where: { id },
+    data: { published },
   });
 }
