@@ -13,14 +13,10 @@ export default function ListWrapper({
   initialData: ArtworkRow[];
   categories: string[];
 }) {
-  // 1️⃣ local React state for your rows
   const [data, setData] = useState<ArtworkRow[]>(initialData);
 
-  // 2️⃣ callback for a single‐row toggle
   const handleToggle = (id: string, published: boolean) => {
-    // optimistic update
     setData((rows) => rows.map((r) => (r.id === id ? { ...r, published } : r)));
-    // persist change—no router.refresh()
     toggleArtworkPublished(id, published);
   };
 

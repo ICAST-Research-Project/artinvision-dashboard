@@ -79,7 +79,6 @@ export function DataTable<TData extends { id: string }, TValue>({
     (categoryColumn?.getFilterValue() as string) ?? "all";
 
   const publishedColumn = table.getColumn("published");
-  // derive the <Select>ʼs string value from the boolean filterValue
   const currentPublished = (() => {
     const v = publishedColumn?.getFilterValue();
     return v === true ? "published" : v === false ? "unpublished" : "all";
@@ -117,7 +116,6 @@ export function DataTable<TData extends { id: string }, TValue>({
           </Select>
         </div>
 
-        {/* Published/Unpublished dropdown filter */}
         <div className="ml-4 max-w-xs">
           <Select
             value={currentPublished}
@@ -213,7 +211,7 @@ export function DataTable<TData extends { id: string }, TValue>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex items-center justify-center space-x-2 py-4">
         <Button
           variant="outline"
           size="sm"

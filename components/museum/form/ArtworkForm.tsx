@@ -21,10 +21,7 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { createArtwork } from "@/actions/artwork";
 import { Uploader } from "./Uploader";
-
-// interface Props extends Partial<Artwork> {
-//   type?: "create" | "update";
-// }
+import { Loader2 } from "lucide-react";
 
 const ArtworkForm = () => {
   const router = useRouter();
@@ -40,12 +37,13 @@ const ArtworkForm = () => {
     },
   });
 
+  const { isSubmitting } = form.formState;
+
   const onSubmit = async (values: z.infer<typeof artworkSchema>) => {
     const result = await createArtwork(values);
 
     if (result.success) {
       toast("Artwork created successfully");
-
       router.push(`/museum/artworks/${result.data.id}`);
     } else {
       toast("Something went wrong!");
@@ -57,12 +55,10 @@ const ArtworkForm = () => {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
-          name={"title"}
+          name="title"
           render={({ field }) => (
             <FormItem className="flex flex-col gap-1">
-              <FormLabel className="text-base font-normal text-dark-500">
-                Artwork Title
-              </FormLabel>
+              <FormLabel>Artwork Title</FormLabel>
               <FormControl>
                 <Input
                   required
@@ -77,12 +73,10 @@ const ArtworkForm = () => {
         />
         <FormField
           control={form.control}
-          name={"description"}
+          name="description"
           render={({ field }) => (
             <FormItem className="flex flex-col gap-1">
-              <FormLabel className="text-base font-normal text-dark-500">
-                Description
-              </FormLabel>
+              <FormLabel>Description</FormLabel>
               <FormControl>
                 <Textarea
                   required
@@ -97,12 +91,10 @@ const ArtworkForm = () => {
         />
         <FormField
           control={form.control}
-          name={"artist"}
+          name="artist"
           render={({ field }) => (
             <FormItem className="flex flex-col gap-1">
-              <FormLabel className="text-base font-normal text-dark-500">
-                Artist Name
-              </FormLabel>
+              <FormLabel>Artist Name</FormLabel>
               <FormControl>
                 <Input
                   required
@@ -115,38 +107,12 @@ const ArtworkForm = () => {
             </FormItem>
           )}
         />
-
-        {/* <FormField
-          control={form.control}
-          name={"imageUrl"}
-          render={({ field }) => (
-            <FormItem className="flex flex-col gap-1">
-              <FormLabel className="text-base font-normal text-dark-500">
-                Artwork Image
-              </FormLabel>
-              <FormControl>
-                <FileUpload
-                  type="image"
-                  accept="image/*"
-                  placeholder="Upload a book cover"
-                  folder="books/covers"
-                  variant="light"
-                  onFileChange={field.onChange}
-                  value={field.value}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        /> */}
         <FormField
           control={form.control}
           name="categoryId"
           render={({ field }) => (
             <FormItem className="w-full">
-              <FormLabel className="text-base font-normal text-dark-500">
-                Select Artwork Category
-              </FormLabel>
+              <FormLabel>Select Artwork Category</FormLabel>
               <FormControl>
                 <Dropdown
                   onChangeHandler={field.onChange}
@@ -157,7 +123,6 @@ const ArtworkForm = () => {
             </FormItem>
           )}
         />
-
         <FormField
           control={form.control}
           name="imageUrls"
@@ -167,15 +132,17 @@ const ArtworkForm = () => {
             </FormControl>
           )}
         />
-
         <Button
           type="submit"
-          className="min-h-12 w-full text-white bg-blue-500"
+          className="min-h-12 w-full text-white bg-blue-500 flex items-center justify-center"
+          disabled={isSubmitting}
         >
-          Add Artwork
+          {isSubmitting && <Loader2 className="animate-spin h-4 w-4 mr-2" />}
+          {isSubmitting ? "Submitting..." : "Add Artwork"}
         </Button>
       </form>
     </Form>
   );
 };
+
 export default ArtworkForm;
