@@ -55,9 +55,9 @@ export const LoginForm = () => {
       if (acct === "MUSEUM_ADMIN") {
         router.push("/museum");
       } else if (acct === "CURATOR") {
-        router.push("/curator/dashboard");
+        router.push("/curator");
       } else if (acct === "ARTIST") {
-        router.push("/artist/dashboard");
+        router.push("/artist");
       } else {
         router.push("/");
       }
