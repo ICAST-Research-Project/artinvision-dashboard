@@ -2,8 +2,9 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import React from "react";
 
-import { db } from "@/lib/db";
 import ListWrapper from "./ListWrapper";
+import { getAllArtworks } from "@/actions/artwork";
+import { db } from "@/lib/db";
 
 export type ArtworkRow = {
   id: string;
@@ -15,18 +16,7 @@ export type ArtworkRow = {
 };
 
 async function getData(): Promise<ArtworkRow[]> {
-  const artworks = await db.artwork.findMany({
-    select: {
-      id: true,
-      title: true,
-      artist: true,
-      description: true,
-      category: { select: { name: true } },
-      published: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
+  const artworks = await getAllArtworks();
   return artworks.map((a) => ({
     id: a.id,
     title: a.title,
