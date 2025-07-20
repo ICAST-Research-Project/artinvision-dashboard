@@ -5,6 +5,16 @@ export const LoginSchema = z.object({
   password: z.string().min(1, { message: "Password is required" }),
 });
 
+export const ResetSchema = z.object({
+  email: z.email({ message: "Email is required" }),
+});
+
+export const NewPassowordSchema = z.object({
+  password: z
+    .string()
+    .min(6, { message: "Minimum of 6 characters is required" }),
+});
+
 const Base = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   email: z.email({ message: "A valid email is required" }),
@@ -47,7 +57,7 @@ export const CategorySchema = z.object({
   id: z.string().nonempty(),
   name: z.string().min(1),
 });
-  
+
 export const CreateCategorySchema = z.object({
   name: z.string().min(1),
 });
