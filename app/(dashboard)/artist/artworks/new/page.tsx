@@ -16,7 +16,7 @@ const page = () => {
         <ArtworkForm />
       </section>
     </>
-  );
-};
-
+  );  
+}; 
+   
 export default page;

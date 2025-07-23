@@ -1,41 +1,53 @@
 "use client";
-import { museumAdminSidebarLinks } from "@/constants";
+
+import React, { useState, useEffect } from "react";
+
 import { cn, getInitials } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React from "react";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Session } from "next-auth";
+import { Button } from "../ui/button";
+import { signOut as nextAuthSignOut } from "next-auth/react";
+import { CiLogout } from "react-icons/ci";
+import { curatorSidebarLinks } from "@/constants";
 
-const Sidebar = ({ session }: { session: Session }) => {
+interface SidebarProps {
+  session: Session;
+}
+
+export default function Sidebar({ session }: SidebarProps) {
   const pathname = usePathname();
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <div className="sticky left-0 top-0 flex h-dvh flex-col justify-between bg-white px-5 pb-5 pt-10">
       <div>
-        <div className="flex flex-row items-center gap-2 border-b border-dashed border-primary-admin/20 pb-10 max-md:justify-center">
+        <div className="flex items-center gap-2 border-b border-dashed border-primary-admin/20 pb-10 max-md:justify-center">
           <Image src="/account.png" alt="logo" height={37} width={37} />
           <h1 className="text-2xl font-semibold text-primary-admin max-md:hidden">
-            Museum Admin
+            Curator Account
           </h1>
         </div>
+
         <div className="mt-10 flex flex-col gap-5">
-          {museumAdminSidebarLinks.map((link) => {
-            const isSelected =
-              (link.route !== "/museum" &&
-                pathname.includes(link.route) &&
-                link.route.length > 1) ||
-              pathname === link.route;
+          {curatorSidebarLinks.map((link) => {
+            const isSelected = mounted && pathname === link.route;
 
             return (
               <Link
-                href={link.route}
                 key={link.route}
+                href={link.route}
                 className={cn(
-                  "link flex items-center gap-2 px-3 py-2 rounded-md",
+                  "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
                   isSelected
-                    ? "bg-blue-500 shadow-sm"
-                    : "hover:bg-primary-admin/10"
+                    ? "bg-blue-500 shadow-sm text-white"
+                    : "hover:bg-primary-admin/10 text-dark"
                 )}
               >
                 <div className="relative w-10 h-10">
@@ -44,25 +56,28 @@ const Sidebar = ({ session }: { session: Session }) => {
                     alt={link.text}
                     fill
                     className={cn(
-                      "object-contain",
+                      "object-contain transition-filter",
                       isSelected && "brightness-0 invert"
                     )}
                   />
                 </div>
-                <p
-                  className={cn(
-                    "hidden sm:block",
-                    isSelected ? "text-white" : "text-dark"
-                  )}
-                >
-                  {link.text}
-                </p>
+                <span className="hidden sm:block">{link.text}</span>
               </Link>
             );
           })}
         </div>
+
+        <Button
+          variant="secondary"
+          size="sm"
+          className="w-full mt-6 p-4"
+          onClick={() => nextAuthSignOut({ callbackUrl: "/" })}
+        >
+          <CiLogout /> Log out
+        </Button>
       </div>
-      <div className="my-8 flex w-full flex-row gap-2 rounded-full items-center justify-center border border-light-400 px-6 py-2 shadow-sm max-md:px-2">
+
+      <div className="my-8 flex items-center gap-2 rounded-full border border-light-400 px-6 py-2 shadow-sm max-md:px-2">
         <Avatar>
           <AvatarFallback className="bg-amber-100">
             {getInitials(session.user.name || "IN")}
@@ -75,6 +90,4 @@ const Sidebar = ({ session }: { session: Session }) => {
       </div>
     </div>
   );
-};
-
-export default Sidebar;
+}

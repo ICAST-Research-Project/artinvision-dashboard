@@ -28,7 +28,7 @@ export default function Sidebar({ session }: SidebarProps) {
     <div className="sticky left-0 top-0 flex h-dvh flex-col justify-between bg-white px-5 pb-5 pt-10">
       <div>
         <div className="flex items-center gap-2 border-b border-dashed border-primary-admin/20 pb-10 max-md:justify-center">
-          <Image src="/museum/account.png" alt="logo" height={37} width={37} />
+          <Image src="/account.png" alt="logo" height={37} width={37} />
           <h1 className="text-2xl font-semibold text-primary-admin max-md:hidden">
             Artist Account
           </h1>

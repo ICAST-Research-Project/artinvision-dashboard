@@ -53,6 +53,13 @@ export const artworkSchema = z.object({
   categoryId: z.string(),
 });
 
+export const collectionSchema = z.object({
+  name: z.string().trim().min(2),
+  about: z.string().trim().min(2),
+  museumAdminId: z.string().nonempty("Please select a museum"),
+  artworkIds: z.array(z.string()).min(1, "Select at least one artwork"),
+});
+
 export const CategorySchema = z.object({
   id: z.string().nonempty(),
   name: z.string().min(1),
