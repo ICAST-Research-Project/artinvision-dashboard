@@ -3,6 +3,6 @@ interface Artwork {
   title: string;
   artist: string;
   description: string;
-  // imageUrl: string;
+  //imageUrl: string;
   categoryId: string;
 }

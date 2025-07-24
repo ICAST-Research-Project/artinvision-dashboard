@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
+import Sidebar from "@/components/curator/Sidebar";
 
-import Sidebar from "@/components/museum/Sidebar";
 import { redirect } from "next/navigation";
 import React, { ReactNode } from "react";
 

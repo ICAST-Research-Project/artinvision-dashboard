@@ -36,25 +36,27 @@ model User {
 }
 
 model MuseumAdmin {
-  id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     String   @unique
+  id         String       @id @default(cuid())
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String       @unique
   museumName String
   about      String
   address    String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  collection Collection[]
 }
 
 model Curator {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String   @unique
-  address   String
-  about     String
-  connect   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String       @id @default(cuid())
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String       @unique
+  address    String
+  about      String
+  connect    String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  collection Collection[]
 }
 
 model Artist {
@@ -112,6 +114,8 @@ model Artwork {
   createdById String
   creatorType AccountType
 
+  artworkLinks CollectionArtwork[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -140,3 +144,33 @@ model PasswordResetToken {
 
   @@unique([email, token])
 }
+
+enum CollectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Collection {
+  id            String              @id @default(cuid())
+  name          String
+  about         String
+  museumAdmin   MuseumAdmin         @relation(fields: [museumAdminId], references: [id])
+  museumAdminId String
+  curator       Curator             @relation(fields: [curatorId], references: [id])
+  curatorId     String
+  artworkLinks  CollectionArtwork[]
+  status        CollectionStatus    @default(PENDING)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+}
+
+model CollectionArtwork {
+  collection   Collection @relation(fields: [collectionId], references: [id])
+  collectionId String
+  artwork      Artwork    @relation(fields: [artworkId], references: [id])
+  artworkId    String
+
+  @@id([collectionId, artworkId])
+}
+   
