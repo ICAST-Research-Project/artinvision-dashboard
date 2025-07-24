@@ -166,48 +166,66 @@ const CollectionForm: React.FC<Props> = ({
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((art) => (
-            <div
-              key={art.id}
-              className="bg-white block rounded-lg shadow hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
-            >
-              <div className="relative w-full h-48">
-                {art.images.length > 1 ? (
-                  <ArtworkCarousel images={art.images} title={art.title} />
-                ) : art.images[0]?.url ? (
-                  <Image
-                    src={art.images[0].url}
-                    alt={art.title}
-                    fill
-                    className="object-contain"
-                  />
-                ) : null}
+          {filtered.map((art) => {
+            const isUnavilable = art.artworkLinks.some(
+              (link) => link.collection.status !== "COMPLETED"
+            );
+            return (
+              <div
+                key={art.id}
+                className="bg-white block rounded-lg shadow hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
+              >
+                <div className="relative w-full h-48">
+                  {art.images.length > 1 ? (
+                    <ArtworkCarousel images={art.images} title={art.title} />
+                  ) : art.images[0]?.url ? (
+                    <Image
+                      src={art.images[0].url}
+                      alt={art.title}
+                      fill
+                      className="object-contain"
+                    />
+                  ) : null}
 
-                <label className="absolute top-2 right-2  bg-opacity-75 p-2 rounded-full z-10">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(art.id)}
-                    onChange={(e) => {
-                      const next = new Set(selected);
-                      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                      e.target.checked ? next.add(art.id) : next.delete(art.id);
-                      setSelected(next);
-                    }}
-                    className="w-6 h-6"
-                  />
-                </label>
+                  <label className="absolute top-2 right-2  bg-opacity-75 p-2 rounded-full z-10">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(art.id)}
+                      disabled={isUnavilable}
+                      onChange={(e) => {
+                        const next = new Set(selected);
+                        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+                        e.target.checked
+                          ? next.add(art.id)
+                          : next.delete(art.id);
+                        setSelected(next);
+                      }}
+                      className="w-6 h-6"
+                    />
+                  </label>
+                </div>
+
+                <CardContent className="p-4 mt-6">
+                  <h3 className="text-lg font-semibold mb-1 truncate">
+                    {art.title}
+                  </h3>
+                  <div className="flex flex-row gap-4">
+                    <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                      {art.category.name}
+                    </span>
+                    <span className=" text-orange-600 italic px-2 py-1  text-xs">
+                      {art.artist}
+                    </span>
+                  </div>
+                  {isUnavilable && (
+                    <p className="mt-2 text-xs italic text-gray-500">
+                      Currently not available!
+                    </p>
+                  )}
+                </CardContent>
               </div>
-
-              <CardContent className="p-4 mt-6">
-                <h3 className="text-lg font-semibold mb-1 truncate">
-                  {art.title}
-                </h3>
-                <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                  {art.category.name}
-                </span>
-              </CardContent>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </form>
     </Form>

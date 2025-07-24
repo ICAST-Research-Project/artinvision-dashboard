@@ -149,6 +149,7 @@ enum CollectionStatus {
   PENDING
   APPROVED
   REJECTED
+  COMPLETED
 }
 
 model Collection {
@@ -174,3 +175,4 @@ model CollectionArtwork {
   @@id([collectionId, artworkId])
 }
    
+

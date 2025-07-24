@@ -12,6 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 import { updateCollectionStatus } from "@/actions/collections";
 import type { CollectionRequest } from "@/actions/collections";
+import Link from "next/link";
 
 export const columns: ColumnDef<CollectionRequest>[] = [
   {
@@ -21,6 +22,14 @@ export const columns: ColumnDef<CollectionRequest>[] = [
   {
     accessorKey: "name",
     header: "Collection Name",
+    cell: ({ row }) => (
+      <Link
+        href={`/museum/requests/${row.original.id}`}
+        className="text-blue-600 hover:underline"
+      >
+        {row.original.name}
+      </Link>
+    ),
   },
 
   {
@@ -69,6 +78,7 @@ export const columns: ColumnDef<CollectionRequest>[] = [
             <SelectItem value="PENDING">Pending</SelectItem>
             <SelectItem value="APPROVED">Approved</SelectItem>
             <SelectItem value="REJECTED">Rejected</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
           </SelectContent>
         </Select>
       );

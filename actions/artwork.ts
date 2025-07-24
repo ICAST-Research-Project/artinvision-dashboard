@@ -7,6 +7,8 @@ import { db } from "@/lib/db";
 import {
   ArtistArtworkInput,
   artistArtworkSchema,
+  UpdateArtworkCuratorInput,
+  updateArtworkCuratorSchema,
   UpdateArtworkInput,
   updateArtworkSchema,
 } from "@/schemas";
@@ -80,6 +82,15 @@ async function getCurrentArtist() {
   const user = await getUserById(session.user.id);
   if (!user) throw new Error("User not found");
   if (user.accountType !== "ARTIST") throw new Error("Not an artist");
+  return user;
+}
+
+async function getCurrentCurator() {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+  const user = await getUserById(session.user.id);
+  if (!user) throw new Error("User not found");
+  if (user.accountType !== "CURATOR") throw new Error("Not an artist");
   return user;
 }
 
@@ -171,6 +182,41 @@ export async function updateArtworkByArtist(input: UpdateArtworkInput) {
   return { success: true, data: JSON.parse(JSON.stringify(updated)) };
 }
 
+export async function updateArtworkByCurator(input: UpdateArtworkCuratorInput) {
+  const { id, title, artist, description, categoryId, imageUrls } =
+    updateArtworkCuratorSchema.parse(input);
+
+  const user = await getCurrentCurator();
+
+  const existing = await db.artwork.findUnique({
+    where: { id },
+    select: { createdById: true },
+  });
+  if (!existing || existing.createdById !== user.id) {
+    throw new Error("Artwork not found or your not its owner.");
+  }
+
+  const updated = await db.artwork.update({
+    where: { id },
+    data: {
+      title,
+      artist,
+      description,
+      categoryId,
+      images: {
+        deleteMany: {},
+        create: imageUrls.map((url) => ({ url })),
+      },
+    },
+    include: {
+      images: true,
+      category: { select: { id: true, name: true } },
+    },
+  });
+
+  return { success: true, data: JSON.parse(JSON.stringify(updated)) };
+}
+
 export async function deleteArtworkByArtistById(
   artworkId: string
 ): Promise<void> {
@@ -182,6 +228,28 @@ export async function deleteArtworkByArtistById(
   if (!session?.user?.id) throw new Error("Not authenticated");
   const user = await getUserById(session.user.id);
   if (!user || user.accountType !== AccountType.ARTIST) {
+    throw new Error("Not authorized");
+  }
+
+  const result = await db.artwork.deleteMany({
+    where: { id: artworkId, createdById: user.id },
+  });
+  if (result.count === 0) {
+    throw new Error("Artwork not found or not your own.");
+  }
+}
+
+export async function deleteArtworkByCuratorId(
+  artworkId: string
+): Promise<void> {
+  if (!artworkId) {
+    throw new Error("Missing artworkId");
+  }
+
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Not authenticated");
+  const user = await getUserById(session.user.id);
+  if (!user || user.accountType !== AccountType.CURATOR) {
     throw new Error("Not authorized");
   }
 
