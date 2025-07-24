@@ -65,7 +65,7 @@ export default function Sidebar({ session }: SidebarProps) {
             );
           })}
         </div>
-
+    
         <Button
           variant="secondary"
           size="sm"

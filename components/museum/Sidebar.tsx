@@ -7,6 +7,9 @@ import { usePathname } from "next/navigation";
 import React from "react";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Session } from "next-auth";
+import { Button } from "../ui/button";
+import { signOut as nextAuthSignOut } from "next-auth/react";
+import { CiLogout } from "react-icons/ci";
 
 const Sidebar = ({ session }: { session: Session }) => {
   const pathname = usePathname();
@@ -61,6 +64,14 @@ const Sidebar = ({ session }: { session: Session }) => {
             );
           })}
         </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="w-full mt-6 p-4"
+          onClick={() => nextAuthSignOut({ callbackUrl: "/" })}
+        >
+          <CiLogout /> Log out
+        </Button>
       </div>
       <div className="my-8 flex w-full flex-row gap-2 rounded-full items-center justify-center border border-light-400 px-6 py-2 shadow-sm max-md:px-2">
         <Avatar>

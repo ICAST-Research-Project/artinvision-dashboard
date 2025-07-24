@@ -10,9 +10,14 @@ export const museumAdminSidebarLinks = [
     text: "All Artworks",
   },
   {
-    img: "/request.png",
+    img: "/requests.png",
     route: "/museum/requests",
-    text: "Account Requests",
+    text: "Collection Requests",
+  },
+  {
+    img: "/profile.png",
+    route: "/museum/settings",
+    text: "Profile",
   },
 ];
 
