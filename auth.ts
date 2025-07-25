@@ -15,15 +15,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token.accountType && session.user) {
         session.user.accountType = token.accountType as AccountType;
       }
+      if (session.user) {
+        session.user.name = token.name;
+        session.user.email = token.email ?? "";
+      }
 
       return session;
     },
     async jwt({ token }) {
       if (!token.sub) return token;
 
-      const existingUser = await getUserById(token.sub);
+      const existingUser: Awaited<ReturnType<typeof getUserById>> =
+        await getUserById(token.sub);
 
       if (!existingUser) return token;
+      token.name = existingUser.name;
+      token.email = existingUser.email;
 
       token.accountType = existingUser.accountType;
 

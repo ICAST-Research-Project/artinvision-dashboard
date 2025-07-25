@@ -87,3 +87,29 @@ export const updateArtworkCuratorSchema = artworkSchema.extend({
 export type UpdateArtworkCuratorInput = z.infer<
   typeof updateArtworkCuratorSchema
 >;
+
+export const museumAdminSettingsSchema = z.object({
+  name: z.string().min(1, { message: "Name is required" }),
+  phone: z.string().min(1, { message: "Phone is required" }),
+  museumName: z.string().min(1, { message: "Museum name is required" }),
+  about: z.string().min(1, { message: "About is required" }),
+  address: z.string().min(1, { message: "Address is required" }),
+});
+
+export const curatorSettingsSchema = z.object({
+  name: z.string().min(1, { message: "Name is required" }),
+  phone: z.string().min(1, { message: "Phone is required" }),
+  about: z.string().min(1, { message: "About is required" }),
+  address: z.string().min(1, { message: "Address is required" }),
+  connect: z.string().optional(),
+});
+
+export const artistSettingsSchema = z.object({
+  name: z.string().min(1, { message: "Name is required" }),
+  phone: z.string().min(1, { message: "Phone is required" }),
+  bio: z.string().min(1, { message: "Bio is required" }),
+  background: z.string().min(1, { message: "Background is required" }),
+  education: z.string().min(1, { message: "Education is required" }),
+  address: z.string().min(1, { message: "Address is required" }),
+  connect: z.string().optional(),
+});
