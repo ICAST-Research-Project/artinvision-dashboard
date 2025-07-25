@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState } from "react";
@@ -26,6 +25,7 @@ import type {
   fetchArtworks,
   fetchCategories,
   fetchMuseums,
+  getCollectionById,
 } from "@/actions/collections";
 
 export type CreateCollectionInput = Parameters<
@@ -35,11 +35,22 @@ export type Museum = Awaited<ReturnType<typeof fetchMuseums>>[0];
 export type Category = Awaited<ReturnType<typeof fetchCategories>>[0];
 export type Artwork = Awaited<ReturnType<typeof fetchArtworks>>[0];
 
+interface CollectionInputWithOptionalId extends CreateCollectionInput {
+  id: string;
+  name: string;
+  about: string;
+  museumAdminId: string;
+  artworkIds: string[];
+}
+
 interface Props {
   museums: Museum[];
   artworks: Artwork[];
   categories: Category[];
-  createCollection: (input: CreateCollectionInput) => Promise<{ id: string }>;
+  createCollection: (
+    input: CollectionInputWithOptionalId
+  ) => Promise<{ id: string }>;
+  initialData?: Awaited<ReturnType<typeof getCollectionById>>;
 }
 
 const CollectionForm: React.FC<Props> = ({
@@ -47,28 +58,57 @@ const CollectionForm: React.FC<Props> = ({
   artworks,
   categories,
   createCollection,
+  initialData,
 }) => {
   const router = useRouter();
   const [filterCat, setFilterCat] = useState<string>("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(
+    new Set(initialData?.artworkLinks.map((l) => l.artwork.id) || [])
+  );
 
   const form = useForm<CreateCollectionInput>({
     resolver: zodResolver(collectionSchema),
-    defaultValues: { name: "", about: "", museumAdminId: "", artworkIds: [] },
+    defaultValues: {
+      name: initialData?.name || "",
+      about: initialData?.about || "",
+      museumAdminId: initialData?.museumAdmin.id || "",
+      artworkIds: initialData?.artworkLinks.map((l) => l.artwork.id) || [],
+    },
   });
+
+  React.useEffect(() => {
+    if (initialData?.artworkLinks) {
+      const initialIds = new Set(
+        initialData.artworkLinks.map((link) => link.artwork.id)
+      );
+      setSelected(initialIds);
+      form.setValue("artworkIds", Array.from(initialIds));
+    }
+  }, []);
 
   React.useEffect(() => {
     form.setValue("artworkIds", Array.from(selected));
   }, [selected, form]);
 
+  const originalSelectedIds = React.useMemo(() => {
+    return new Set(initialData?.artworkLinks.map((l) => l.artwork.id) || []);
+  }, [initialData]);
+
   const onSubmit = async (values: CreateCollectionInput) => {
     try {
-      const { id } = await createCollection(values);
-      toast.success("Collection Created successfully!");
+      const { id } = await createCollection({
+        ...values,
+        id: initialData?.id ?? "", // pass ID only during update, ensure string
+      });
+      toast.success(
+        initialData
+          ? "Collection Updated successfully!"
+          : "Collection Created successfully!"
+      );
       router.push(`/curator/collections/${id}`);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      toast.error(err.message || "Failed to create collection");
+      toast.error(err.message || "Failed to submit collection");
     }
   };
 
@@ -167,9 +207,14 @@ const CollectionForm: React.FC<Props> = ({
 
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filtered.map((art) => {
-            const isUnavilable = art.artworkLinks.some(
+            const wasOriginallySelected = originalSelectedIds.has(art.id);
+
+            const isUnavailable = art.artworkLinks.some(
               (link) => link.collection.status !== "COMPLETED"
             );
+
+            const isDisabled = isUnavailable && !wasOriginallySelected;
+
             return (
               <div
                 key={art.id}
@@ -191,14 +236,17 @@ const CollectionForm: React.FC<Props> = ({
                     <input
                       type="checkbox"
                       checked={selected.has(art.id)}
-                      disabled={isUnavilable}
+                      disabled={isDisabled}
                       onChange={(e) => {
-                        const next = new Set(selected);
-                        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                        e.target.checked
-                          ? next.add(art.id)
-                          : next.delete(art.id);
-                        setSelected(next);
+                        setSelected((prevSelected) => {
+                          const updated = new Set(prevSelected);
+                          if (e.target.checked) {
+                            updated.add(art.id);
+                          } else {
+                            updated.delete(art.id);
+                          }
+                          return new Set(updated);
+                        });
                       }}
                       className="w-6 h-6"
                     />
@@ -217,7 +265,7 @@ const CollectionForm: React.FC<Props> = ({
                       {art.artist}
                     </span>
                   </div>
-                  {isUnavilable && (
+                  {isDisabled && (
                     <p className="mt-2 text-xs italic text-gray-500">
                       Currently not available!
                     </p>

@@ -46,7 +46,9 @@ export const columns: ColumnDef<CollectionRequest>[] = [
           ? "text-green-600"
           : status === "REJECTED"
             ? "text-red-600"
-            : "text-yellow-600";
+            : status === "COMPLETED"
+              ? "text-blue-500"
+              : "text-yellow-600";
 
       return <span className={`capitalize ${colorClass}`}>{status}</span>;
     },
@@ -76,8 +78,8 @@ export const columns: ColumnDef<CollectionRequest>[] = [
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="APPROVED">Approved</SelectItem>
-            <SelectItem value="REJECTED">Rejected</SelectItem>
+            <SelectItem value="APPROVED">Approve</SelectItem>
+            <SelectItem value="REJECTED">Reject</SelectItem>
             <SelectItem value="COMPLETED">Completed</SelectItem>
           </SelectContent>
         </Select>

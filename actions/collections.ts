@@ -53,17 +53,6 @@ export async function fetchMuseums() {
   });
 }
 
-// export async function fetchArtworks() {
-//   return db.artwork.findMany({
-//     include: {
-//       category: { select: { id: true, name: true } },
-//       images: { select: { id: true, url: true } },
-//       _count: { select: { artworkLinks: true } },
-//     },
-//     orderBy: { title: "asc" },
-//   });
-// }
-
 export async function fetchArtworks() {
   return db.artwork.findMany({
     include: {
@@ -218,7 +207,7 @@ export async function getCollectionById(id: string) {
     where: { id },
     include: {
       museumAdmin: {
-        select: { museumName: true },
+        select: { id: true, museumName: true },
       },
       curator: {
         include: {
@@ -237,4 +226,25 @@ export async function getCollectionById(id: string) {
       },
     },
   });
+}
+
+export async function updateCollectionAction(
+  input: CreateCollectionInput & { id: string }
+): Promise<{ id: string }> {
+  const { id, name, about, museumAdminId, artworkIds } = input;
+
+  await db.collection.update({
+    where: { id },
+    data: {
+      name,
+      about,
+      museumAdminId,
+      artworkLinks: {
+        deleteMany: {}, // delete old links
+        create: artworkIds.map((artworkId) => ({ artworkId })),
+      },
+    },
+  });
+
+  return { id };
 }

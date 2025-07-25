@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { PenBoxIcon, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { CollectionSummary } from "@/actions/collections";
 import { deleteCollection } from "@/actions/collections";
@@ -36,7 +36,9 @@ export const columns: ColumnDef<Collection>[] = [
           ? "text-green-600"
           : status === "REJECTED"
             ? "text-red-600"
-            : "text-yellow-600";
+            : status === "COMPLETED"
+              ? "text-blue-500"
+              : "text-yellow-600";
 
       return <span className={`capitalize ${colorClass}`}>{status}</span>;
     },
@@ -47,6 +49,9 @@ export const columns: ColumnDef<Collection>[] = [
     cell: ({ row }) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
       const router = useRouter();
+      const status = row.original.status;
+      const isEditable = status !== "COMPLETED";
+
       const onDelete = async () => {
         if (!confirm(`Delete “${row.original.name}”?`)) return;
         try {
@@ -57,14 +62,32 @@ export const columns: ColumnDef<Collection>[] = [
           alert(err.message || "Failed to delete");
         }
       };
+
       return (
-        <button
-          onClick={onDelete}
-          className="p-1 rounded hover:bg-red-100"
-          aria-label="Delete collection"
-        >
-          <Trash2 className="h-4 w-4 text-red-500" />
-        </button>
+        <div className="flex flex-row items-center space-x-2">
+          {isEditable ? (
+            <Link
+              href={`/curator/collections/edit/${row.original.id}`}
+              className="p-1 rounded hover:bg-green-200"
+            >
+              <PenBoxIcon className="h-4 w-4 text-green-500" />
+            </Link>
+          ) : (
+            <div
+              className="p-1 rounded cursor-not-allowed opacity-50"
+              title="Cannot edit a completed collection"
+            >
+              <PenBoxIcon className="h-4 w-4 text-gray-400" />
+            </div>
+          )}
+          <button
+            onClick={onDelete}
+            className="p-1 rounded hover:bg-red-100"
+            aria-label="Delete collection"
+          >
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </button>
+        </div>
       );
     },
   },
