@@ -23,7 +23,7 @@ export default async function CollectionPage({
     <div className="max-w-3xl space-y-6">
       <div className="flex justify-start pb-1">
         <Button asChild variant="secondary">
-          <Link href="/curator/collections">Go Back</Link>
+          <Link href="/museum/requests">Go Back</Link>
         </Button>
       </div>
 
@@ -35,9 +35,9 @@ export default async function CollectionPage({
 
       <div className="flex items-center gap-4">
         <div>
-          <h2 className="font-semibold">Museum:</h2>
+          <h2 className="font-semibold">Curator Name:</h2>
           <p className="text-lg text-muted-foreground">
-            {collection.museumAdmin.museumName}
+            {collection.curator.user.name}
           </p>
         </div>
       </div>

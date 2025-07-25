@@ -53,11 +53,28 @@ export async function fetchMuseums() {
   });
 }
 
+// export async function fetchArtworks() {
+//   return db.artwork.findMany({
+//     include: {
+//       category: { select: { id: true, name: true } },
+//       images: { select: { id: true, url: true } },
+//       _count: { select: { artworkLinks: true } },
+//     },
+//     orderBy: { title: "asc" },
+//   });
+// }
+
 export async function fetchArtworks() {
   return db.artwork.findMany({
     include: {
       category: { select: { id: true, name: true } },
       images: { select: { id: true, url: true } },
+      artworkLinks: {
+        include: {
+          collection: { select: { status: true } },
+        },
+      },
+      _count: { select: { artworkLinks: true } },
     },
     orderBy: { title: "asc" },
   });
@@ -129,7 +146,7 @@ export type CollectionRequest = {
   status: CollectionStatus;
   curatorName: string;
 };
-    
+
 export async function fetchCollectionsForMuseumAdminRequests(): Promise<
   CollectionRequest[]
 > {
@@ -193,5 +210,31 @@ export async function updateCollectionStatus(
   await db.collection.update({
     where: { id: collectionId },
     data: { status },
+  });
+}
+
+export async function getCollectionById(id: string) {
+  return db.collection.findUnique({
+    where: { id },
+    include: {
+      museumAdmin: {
+        select: { museumName: true },
+      },
+      curator: {
+        include: {
+          user: { select: { name: true } },
+        },
+      },
+      artworkLinks: {
+        include: {
+          artwork: {
+            include: {
+              category: true,
+              images: { select: { url: true } },
+            },
+          },
+        },
+      },
+    },
   });
 }

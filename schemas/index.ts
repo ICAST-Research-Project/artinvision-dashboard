@@ -72,7 +72,6 @@ export const CreateCategorySchema = z.object({
 export type Category = z.infer<typeof CategorySchema>;
 export type CreateCategory = z.infer<typeof CreateCategorySchema>;
 
-//droping `artist` to infer it on server-side
 export const artistArtworkSchema = artworkSchema.omit({ artist: true });
 export type ArtistArtworkInput = z.infer<typeof artistArtworkSchema>;
 
@@ -80,3 +79,37 @@ export const updateArtworkSchema = artistArtworkSchema.extend({
   id: z.string(),
 });
 export type UpdateArtworkInput = z.infer<typeof updateArtworkSchema>;
+
+export const updateArtworkCuratorSchema = artworkSchema.extend({
+  id: z.string(),
+});
+
+export type UpdateArtworkCuratorInput = z.infer<
+  typeof updateArtworkCuratorSchema
+>;
+
+export const museumAdminSettingsSchema = z.object({
+  name: z.string().min(1, { message: "Name is required" }),
+  phone: z.string().min(1, { message: "Phone is required" }),
+  museumName: z.string().min(1, { message: "Museum name is required" }),
+  about: z.string().min(1, { message: "About is required" }),
+  address: z.string().min(1, { message: "Address is required" }),
+});
+
+export const curatorSettingsSchema = z.object({
+  name: z.string().min(1, { message: "Name is required" }),
+  phone: z.string().min(1, { message: "Phone is required" }),
+  about: z.string().min(1, { message: "About is required" }),
+  address: z.string().min(1, { message: "Address is required" }),
+  connect: z.string().optional(),
+});
+
+export const artistSettingsSchema = z.object({
+  name: z.string().min(1, { message: "Name is required" }),
+  phone: z.string().min(1, { message: "Phone is required" }),
+  bio: z.string().min(1, { message: "Bio is required" }),
+  background: z.string().min(1, { message: "Background is required" }),
+  education: z.string().min(1, { message: "Education is required" }),
+  address: z.string().min(1, { message: "Address is required" }),
+  connect: z.string().optional(),
+});
