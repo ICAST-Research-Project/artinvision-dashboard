@@ -20,6 +20,7 @@ import { FormSuccess } from "../form-success";
 import { register } from "@/actions/register";
 import { useState, useTransition } from "react";
 import { Textarea } from "../ui/textarea";
+import { ProfileUploader } from "../ProfileUploader";
 
 export const RegisterForm = () => {
   const [error, setError] = useState<string | undefined>("");
@@ -36,6 +37,7 @@ export const RegisterForm = () => {
       museumName: "",
       address: "",
       about: "",
+      image: undefined,
     },
   });
 
@@ -147,6 +149,21 @@ export const RegisterForm = () => {
                       placeholder="XXX-XXX-XXXX"
                       type="number"
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name="image"
+              render={({ field }) => (
+                <FormItem className="col-span-full">
+                  <FormLabel>Profile Picture</FormLabel>
+                  <FormControl>
+                    <div className="flex flex-col gap-4">
+                      <ProfileUploader onUploadComplete={field.onChange} />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -306,40 +323,7 @@ export const RegisterForm = () => {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="background"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Background</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          disabled={isPending}
-                          placeholder="background"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="education"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Education</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          disabled={isPending}
-                          placeholder="education"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
                 <FormField
                   control={form.control}
                   name="connect"

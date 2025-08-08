@@ -38,6 +38,7 @@ const Page = () => {
       name: user?.name || "",
       phone: user?.phone || "",
       about: user?.curator?.about || "",
+      image: user?.image || undefined,
       address: user?.curator?.address || "",
       connect: user?.curator?.connect || "",
     },
@@ -48,6 +49,7 @@ const Page = () => {
         name: user.name || "",
         phone: user.phone || "",
         about: user.curator?.about || "",
+        image: user?.image || undefined,
         address: user.curator?.address || "",
         connect: user.curator?.connect || "",
       });
@@ -124,6 +126,28 @@ const Page = () => {
                         placeholder="address"
                         type="text"
                       />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile Picture</FormLabel>
+                    <FormControl>
+                      <div className="flex flex-col gap-4">
+                        {/* <ProfileUploader onUploadComplete={field.onChange} /> */}
+                        {field.value && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={field.value}
+                            alt="Current profile"
+                            className=" w-full object-contian"
+                          />
+                        )}
+                      </div>
                     </FormControl>
                   </FormItem>
                 )}

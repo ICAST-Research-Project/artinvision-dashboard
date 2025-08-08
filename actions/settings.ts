@@ -28,6 +28,7 @@ export const getCurrentMuseumAdmin = async () => {
     name: user?.name,
     email: user?.email,
     phone: user?.phone,
+    image: user?.image,
     accountType: user?.accountType,
     museumAdmin: user?.museumAdmin || null,
   };
@@ -105,6 +106,7 @@ export const getCurrentCurator = async () => {
     name: user?.name,
     email: user?.email,
     phone: user?.phone,
+    image: user?.image,
     accountType: user?.accountType,
     curator: user?.curator,
   };
@@ -168,6 +170,7 @@ export const getCurrentArtist = async () => {
     name: user?.name,
     email: user?.email,
     phone: user?.phone,
+    image: user?.image,
     accountType: user?.accountType,
     artist: user?.artist,
   };
@@ -207,8 +210,6 @@ export const artistSettings = async (
       data: {
         bio: values.bio,
         address: values.address,
-        background: values.background,
-        education: values.education,
         connect: values.connect,
       },
     });

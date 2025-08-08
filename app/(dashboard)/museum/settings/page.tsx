@@ -1,8 +1,9 @@
 "use client";
- 
+
 import { museumAdminSettings } from "@/actions/settings";
 import { FormError } from "@/components/form-error";
 import { FormSuccess } from "@/components/form-success";
+
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -40,6 +41,7 @@ const Page = () => {
       museumName: user?.museumAdmin?.museumName || "",
       about: user?.museumAdmin?.about || "",
       address: user?.museumAdmin?.address || "",
+      image: user?.image || undefined,
     },
   });
   useEffect(() => {
@@ -50,6 +52,7 @@ const Page = () => {
         museumName: user.museumAdmin?.museumName || "",
         about: user.museumAdmin?.about || "",
         address: user.museumAdmin?.address || "",
+        image: user.image || undefined,
       });
     }
   }, [user, form]);
@@ -66,7 +69,7 @@ const Page = () => {
           }
         })
         .catch(() => setError("Something went wrong"));
-    });
+    });   
   };
   return (
     <div className="w-[600px]">
@@ -122,6 +125,28 @@ const Page = () => {
                         placeholder="XXX-XXX-XXXX"
                         disabled={isPending}
                       />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile Picture</FormLabel>
+                    <FormControl>
+                      <div className="flex flex-col gap-4">
+                        {/* <ProfileUploader onUploadComplete={field.onChange} /> */}
+                        {field.value && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={field.value}
+                            alt="Current profile"
+                            className=" w-full object-contian"
+                          />
+                        )}
+                      </div>
                     </FormControl>
                   </FormItem>
                 )}

@@ -35,6 +35,11 @@ export const columns: ColumnDef<CollectionRequest>[] = [
   {
     accessorKey: "about",
     header: "About",
+    cell: ({ row }) => {
+      const full = row.original.about;
+      const truncated = full.length > 15 ? full.slice(0, 50) + "…" : full;
+      return <span>{truncated}</span>;
+    },
   },
   {
     accessorKey: "status",

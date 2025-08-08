@@ -20,6 +20,7 @@ const Base = z.object({
   email: z.email({ message: "A valid email is required" }),
   phone: z.string().min(1, { message: "Phone number is required" }),
   password: z.string().min(6, { message: "Minimum 6 characters required" }),
+  image: z.url(),
 });
 
 export const RegisterSchema = z.discriminatedUnion("accountType", [
@@ -39,8 +40,6 @@ export const RegisterSchema = z.discriminatedUnion("accountType", [
     accountType: z.literal("ARTIST"),
     address: z.string().min(1, { message: "Address is required" }),
     bio: z.string().min(1, { message: "Bio is required" }),
-    background: z.string().min(1, { message: "Background is required" }),
-    education: z.string().min(1, { message: "Education is required" }),
     connect: z.string().optional(),
   }),
 ]);
@@ -94,12 +93,14 @@ export const museumAdminSettingsSchema = z.object({
   museumName: z.string().min(1, { message: "Museum name is required" }),
   about: z.string().min(1, { message: "About is required" }),
   address: z.string().min(1, { message: "Address is required" }),
+  image: z.url(),
 });
 
 export const curatorSettingsSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   phone: z.string().min(1, { message: "Phone is required" }),
   about: z.string().min(1, { message: "About is required" }),
+  image: z.url(),
   address: z.string().min(1, { message: "Address is required" }),
   connect: z.string().optional(),
 });
@@ -108,8 +109,7 @@ export const artistSettingsSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   phone: z.string().min(1, { message: "Phone is required" }),
   bio: z.string().min(1, { message: "Bio is required" }),
-  background: z.string().min(1, { message: "Background is required" }),
-  education: z.string().min(1, { message: "Education is required" }),
+  image: z.url(),
   address: z.string().min(1, { message: "Address is required" }),
   connect: z.string().optional(),
 });

@@ -38,8 +38,7 @@ const Page = () => {
       name: user?.name || "",
       phone: user?.phone || "",
       bio: user?.artist?.bio || "",
-      background: user?.artist?.background || "",
-      education: user?.artist?.education || "",
+      image: user?.image || undefined,
       address: user?.artist?.address || "",
       connect: user?.artist?.connect || "",
     },
@@ -50,8 +49,7 @@ const Page = () => {
         name: user.name || "",
         phone: user.phone || "",
         bio: user?.artist?.bio || "",
-        background: user?.artist?.background || "",
-        education: user?.artist?.education || "",
+        image: user?.image || undefined,
         address: user?.artist?.address || "",
         connect: user?.artist?.connect || "",
       });
@@ -133,6 +131,28 @@ const Page = () => {
               />
               <FormField
                 control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile Picture</FormLabel>
+                    <FormControl>
+                      <div className="flex flex-col gap-4">
+                        {/* <ProfileUploader onUploadComplete={field.onChange} /> */}
+                        {field.value && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={field.value}
+                            alt="Current profile"
+                            className=" w-full object-contian"
+                          />
+                        )}
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="bio"
                 render={({ field }) => (
                   <FormItem>
@@ -147,38 +167,7 @@ const Page = () => {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="background"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Background</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        disabled={isPending}
-                        placeholder="background"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="education"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Education</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        disabled={isPending}
-                        placeholder="education"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+
               <FormField
                 control={form.control}
                 name="connect"

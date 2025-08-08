@@ -10,6 +10,15 @@ import { auth } from "./auth";
 export default auth((req) => {
   const { nextUrl } = req;
   const session = req.auth;
+  // added while, i was getting th error while uploading the profiel image while registration
+  const path = nextUrl.pathname;
+  if (
+    path.startsWith("/api/s3/") ||
+    path === "/api/museums" ||
+    path.startsWith("/api/museums/")
+  ) {
+    return NextResponse.next();
+  }
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
   const isAuthPage = authRoutes.includes(nextUrl.pathname);
   const isPublicPage = publicRoutes.includes(nextUrl.pathname);

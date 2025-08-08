@@ -51,8 +51,6 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
           create: {
             address: data.address,
             bio: data.bio,
-            background: data.background,
-            education: data.education,
             connect: data.connect,
           },
         },
@@ -67,6 +65,7 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
       phone: data.phone,
       password: hashed,
       accountType: data.accountType,
+      image: data.image,
       ...profileCreate,
     },
   });
