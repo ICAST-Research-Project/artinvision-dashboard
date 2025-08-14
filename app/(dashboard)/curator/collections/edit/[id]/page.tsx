@@ -11,11 +11,12 @@ import {
 } from "@/actions/collections";
 
 interface EditPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 const EditPage = async ({ params }: EditPageProps) => {
-  const collection = await getCollectionById(params.id);
+  const { id } = await params;
+  const collection = await getCollectionById(id);
   const museums = await fetchMuseums();
   const artworks = await fetchArtworks();
   const categories = await fetchCategories();

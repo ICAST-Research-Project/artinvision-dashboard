@@ -13,9 +13,9 @@ export const dynamic = "force-dynamic";
 export default async function CollectionPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = await params;
   const collection = await getCollectionById(id);
   if (!collection) notFound();
 
