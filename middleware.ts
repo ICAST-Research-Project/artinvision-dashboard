@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-// Keep simple constants inline to avoid server-only imports
 const apiAuthPrefix = "/api/auth";
 const publicRoutes = ["/", "/auth/login", "/auth/register"];
 
@@ -11,7 +10,7 @@ export async function middleware(req: NextRequest) {
   const { nextUrl } = req;
   const pathname = nextUrl.pathname;
 
-  // allow specific APIs you mentioned
+  // allow these APIs outright
   if (
     pathname.startsWith("/api/s3/") ||
     pathname === "/api/museums" ||
@@ -33,23 +32,22 @@ export async function middleware(req: NextRequest) {
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const isLoggedIn = !!token;
-
-  // 🔴 IMPORTANT: handle /auth/* BEFORE letting auth/public routes pass
   const isAuthPage = pathname.startsWith("/auth/");
+  const isPublic = publicRoutes.includes(pathname);
+
+  // 🔴 If the user is already logged in and is on an auth page, push them away.
   if (isAuthPage && isLoggedIn) {
-    // honor ?next, else send by role
-    const next = nextUrl.searchParams.get("next");
+    const paramNext = nextUrl.searchParams.get("next");
+    // sensible role-based default
     const byRole =
       (token?.accountType === "ARTIST" && "/artist") ||
       (token?.accountType === "CURATOR" && "/curator") ||
       (token?.accountType === "MUSEUM_ADMIN" && "/museum") ||
       "/";
-
-    return NextResponse.redirect(new URL(next || byRole, nextUrl));
+    return NextResponse.redirect(new URL(paramNext || byRole, nextUrl));
   }
 
-  // public pages always allowed
-  const isPublic = publicRoutes.includes(pathname);
+  // public and auth pages are allowed through
   if (isPublic || isAuthPage) {
     return NextResponse.next();
   }
