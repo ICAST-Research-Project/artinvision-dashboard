@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 interface EditPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 const EditPage = async ({ params }: EditPageProps) => {
-  const art = await getArtworkById(params.id);
+  const { id } = await params;
+  const art = await getArtworkById(id);
 
   return (
     <div>
@@ -20,7 +21,7 @@ const EditPage = async ({ params }: EditPageProps) => {
       </div>
       <h1 className="text-2xl font-bold mb-4">Update Artwork</h1>
       <ArtworkForm
-        id={params.id}
+        id={id}
         initialValues={{
           title: art.title,
           description: art.description,
