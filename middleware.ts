@@ -1,86 +1,57 @@
-// middleware.ts
 import { NextResponse } from "next/server";
-import { auth } from "./auth";
+// import authConfig from "./auth.config";
+// import NextAuth from "next-auth";
+import { apiAuthPrefix, authRoutes, publicRoutes } from "@/routes";
 
-// Inline these to avoid importing from "@/routes" (which may pull server-only deps)
-const apiAuthPrefix = "/api/auth";
-const publicRoutes = [
-  "/",
-  "/auth/login",
-  "/auth/register",
-  // add any other fully public pages here
-];
-const authRoutes = [
-  "/auth/login",
-  "/auth/register",
-  // any routes that should remain accessible even when logged in
-];
+// const { auth } = NextAuth(authConfig);
+
+import { auth } from "./auth";
 
 export default auth((req) => {
   const { nextUrl } = req;
-  const pathname = nextUrl.pathname;
-
-  // --- Fast exits / allowlist for uploads & public APIs you mentioned ---
+  const session = req.auth;
+  // added while, i was getting th error while uploading the profiel image while registration
+  const path = nextUrl.pathname;
   if (
-    pathname.startsWith("/api/s3/") ||
-    pathname === "/api/museums" ||
-    pathname.startsWith("/api/museums/")
+    path.startsWith("/api/s3/") ||
+    path === "/api/museums" ||
+    path.startsWith("/api/museums/")
   ) {
     return NextResponse.next();
   }
+  const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
+  const isAuthPage = authRoutes.includes(nextUrl.pathname);
+  const isPublicPage = publicRoutes.includes(nextUrl.pathname);
+  const isLoggedIn = Boolean(req.auth);
 
-  // Never run auth logic for NextAuth’s own API routes
-  if (pathname.startsWith(apiAuthPrefix)) {
+  if (isApiAuthRoute || isAuthPage || isPublicPage) {
     return NextResponse.next();
   }
-
-  // Don’t guard Next.js internals or static files
-  if (
-    pathname.startsWith("/_next/") ||
-    pathname.startsWith("/static/") ||
-    pathname.startsWith("/favicon") ||
-    pathname.match(/\.(.*)$/) // file requests
-  ) {
-    return NextResponse.next();
-  }
-
-  const isPublic = publicRoutes.includes(pathname);
-  const isAuthPage = authRoutes.includes(pathname);
-  const isLoggedIn = !!req.auth;
-
-  // Public pages are always allowed
-  if (isPublic || isAuthPage) {
-    return NextResponse.next();
-  }
-
-  // Require auth for everything else
   if (!isLoggedIn) {
-    const url = new URL("/auth/login", nextUrl); // correct base for Edge
-    url.searchParams.set("next", pathname + nextUrl.search);
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(new URL("/auth/login", nextUrl));
   }
 
-  // Role-based gates (defensive: only read if present)
-  const role = req.auth?.user?.accountType as
-    | "CURATOR"
-    | "MUSEUM_ADMIN"
-    | "ARTIST"
-    | undefined;
+  const role = session?.user.accountType;
 
-  if (pathname.startsWith("/curator") && role !== "CURATOR") {
+  if (nextUrl.pathname.startsWith("/curator") && role !== "CURATOR") {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
-  if (pathname.startsWith("/museum") && role !== "MUSEUM_ADMIN") {
+
+  if (nextUrl.pathname.startsWith("/museum") && role !== "MUSEUM_ADMIN") {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
-  if (pathname.startsWith("/artist") && role !== "ARTIST") {
+
+  if (nextUrl.pathname.startsWith("/artist") && role !== "ARTIST") {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
+
+  // if (isPublicPage || isAuthPage) {
+  //   return NextResponse.next();
+  // }
 
   return NextResponse.next();
 });
 
 export const config = {
-  // Keep this matcher tight. Avoid blanket-catching all API routes unless you must.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|images|public).*)"],
+  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
 };
