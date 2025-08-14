@@ -128,7 +128,7 @@ export async function getAllArtworks() {
     },
   });
 }
-      
+
 export async function getArtworkById(id: string) {
   const user = await getCurrentUser();
   return await db.artwork.findUniqueOrThrow({
