@@ -16,7 +16,7 @@ export async function GET(
 
   try {
     const raw = await db.collection.findMany({
-      where: { museumAdminId: museumId },
+      where: { museumAdminId: museumId, status: "APPROVED" },
       select: {
         id: true,
         name: true,

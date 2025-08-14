@@ -113,3 +113,4 @@ export const artistSettingsSchema = z.object({
   address: z.string().min(1, { message: "Address is required" }),
   connect: z.string().optional(),
 });
+  
