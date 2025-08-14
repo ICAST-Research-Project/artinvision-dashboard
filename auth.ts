@@ -1,3 +1,4 @@
+// auth.ts (no changes needed for Edge; keep PrismaAdapter here, not in middleware)
 import NextAuth from "next-auth";
 import authConfig from "./auth.config";
 import { PrismaAdapter } from "@auth/prisma-adapter";
@@ -11,7 +12,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token.sub && session.user) {
         session.user.id = token.sub;
       }
-
       if (token.accountType && session.user) {
         session.user.accountType = token.accountType as AccountType;
       }
@@ -19,21 +19,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.name = token.name;
         session.user.email = token.email ?? "";
       }
-
       return session;
     },
     async jwt({ token }) {
       if (!token.sub) return token;
-
-      const existingUser: Awaited<ReturnType<typeof getUserById>> =
-        await getUserById(token.sub);
-
+      const existingUser = await getUserById(token.sub);
       if (!existingUser) return token;
+
       token.name = existingUser.name;
       token.email = existingUser.email;
-
-      token.accountType = existingUser.accountType;
-
+      token.accountType = existingUser.accountType; // <- required for middleware
       return token;
     },
   },
