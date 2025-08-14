@@ -1,4 +1,3 @@
-// auth.ts (no changes needed for Edge; keep PrismaAdapter here, not in middleware)
 import NextAuth from "next-auth";
 import authConfig from "./auth.config";
 import { PrismaAdapter } from "@auth/prisma-adapter";

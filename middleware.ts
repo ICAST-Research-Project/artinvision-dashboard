@@ -1,4 +1,3 @@
-// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
@@ -10,7 +9,6 @@ export async function middleware(req: NextRequest) {
   const { nextUrl } = req;
   const pathname = nextUrl.pathname;
 
-  // allow these APIs outright
   if (
     pathname.startsWith("/api/s3/") ||
     pathname === "/api/museums" ||
@@ -19,7 +17,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // skip NextAuth API & static/file requests
   if (
     pathname.startsWith(apiAuthPrefix) ||
     pathname.startsWith("/_next/") ||
@@ -35,10 +32,8 @@ export async function middleware(req: NextRequest) {
   const isAuthPage = pathname.startsWith("/auth/");
   const isPublic = publicRoutes.includes(pathname);
 
-  // 🔴 If the user is already logged in and is on an auth page, push them away.
   if (isAuthPage && isLoggedIn) {
     const paramNext = nextUrl.searchParams.get("next");
-    // sensible role-based default
     const byRole =
       (token?.accountType === "ARTIST" && "/artist") ||
       (token?.accountType === "CURATOR" && "/curator") ||
@@ -47,24 +42,17 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(paramNext || byRole, nextUrl));
   }
 
-  // public and auth pages are allowed through
   if (isPublic || isAuthPage) {
     return NextResponse.next();
   }
 
-  // everything else requires auth
   if (!isLoggedIn) {
     const url = new URL("/auth/login", nextUrl);
     url.searchParams.set("next", pathname + nextUrl.search);
     return NextResponse.redirect(url);
   }
 
-  // role gates
-  const role = token?.accountType as
-    | "CURATOR"
-    | "MUSEUM_ADMIN"
-    | "ARTIST"
-    | undefined;
+  const role = token?.accountType as "CURATOR" | "MUSEUM_ADMIN" | "ARTIST";
   if (pathname.startsWith("/curator") && role !== "CURATOR") {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
