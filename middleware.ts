@@ -12,7 +12,9 @@ export async function middleware(req: NextRequest) {
   if (
     pathname.startsWith("/api/s3/") ||
     pathname === "/api/museums" ||
-    pathname.startsWith("/api/museums/")
+    pathname.startsWith("/api/museums/") ||
+    pathname.startsWith("/api/collections/") ||
+    pathname === "/api/collections"
   ) {
     return NextResponse.next();
   }
