@@ -11,6 +11,7 @@ export async function middleware(req: NextRequest) {
 
   if (
     pathname.startsWith("/api/s3/") ||
+    pathname.startsWith("/api/profiles3") ||
     pathname === "/api/museums" ||
     pathname.startsWith("/api/museums/") ||
     pathname.startsWith("/api/collections/") ||

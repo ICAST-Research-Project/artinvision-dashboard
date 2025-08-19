@@ -47,7 +47,7 @@ export const RegisterSchema = z.discriminatedUnion("accountType", [
 export const artworkSchema = z.object({
   title: z.string().trim().min(2).max(100),
   description: z.string().min(10),
-  artist: z.string().trim().min(1).max(100),
+  artistId: z.string().min(1, "Select an artist"),
   imageUrls: z.array(z.url()).min(1, "Upload at least one image"),
   categoryId: z.string(),
 });
@@ -71,7 +71,7 @@ export const CreateCategorySchema = z.object({
 export type Category = z.infer<typeof CategorySchema>;
 export type CreateCategory = z.infer<typeof CreateCategorySchema>;
 
-export const artistArtworkSchema = artworkSchema.omit({ artist: true });
+export const artistArtworkSchema = artworkSchema.omit({ artistId: true });
 export type ArtistArtworkInput = z.infer<typeof artistArtworkSchema>;
 
 export const updateArtworkSchema = artistArtworkSchema.extend({

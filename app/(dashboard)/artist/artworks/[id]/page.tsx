@@ -31,7 +31,9 @@ export default async function ArtworkPage(props: {
       <Badge variant="secondary">{art.category.name}</Badge>
       <div className="flex items-center gap-2">
         <h1 className="font-semibold">Artist Name: </h1>
-        <span className="text-lg text-muted-foreground">{art.artist}</span>
+        <span className="text-lg text-muted-foreground">
+          {art.artistRel?.name}
+        </span>
       </div>
 
       <h1 className="font-semibold">Description:</h1>

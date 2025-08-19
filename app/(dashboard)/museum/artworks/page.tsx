@@ -20,7 +20,7 @@ async function getData(): Promise<ArtworkRow[]> {
   return artworks.map((a) => ({
     id: a.id,
     title: a.title,
-    artist: a.artist,
+    artist: a.artistRel?.name ?? "Unknown",
     description: a.description,
     categoryName: a.category.name,
     published: a.published,

@@ -7,11 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-// Base URL for your S3 bucket (path-style)
-const BUCKET_BASE = `${process.env.NEXT_PUBLIC_AWS_ENDPOINT_URL_S3}/${process.env.NEXT_PUBLIC_S3_BUCKET_NAME}`;
+const BUCKET_BASE = `${process.env.NEXT_PUBLIC_AWS_ENDPOINT_URL_S3}/${process.env.NEXT_PUBLIC_S3_BUCKET_NAME_PROFILE}`;
 
 interface ProfileUploaderProps {
-  /** Callback fired with the public URL after upload completes or null after delete */
   onUploadComplete: (url: string | null) => void;
 }
 
@@ -25,7 +23,7 @@ export function ProfileUploader({ onUploadComplete }: ProfileUploaderProps) {
     if (!fileKey) return;
     try {
       setUploading(true);
-      const res = await fetch("/api/s3/delete", {
+      const res = await fetch("/api/profiles3/delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: fileKey }),
@@ -52,8 +50,7 @@ export function ProfileUploader({ onUploadComplete }: ProfileUploaderProps) {
         setUploading(true);
         setError(null);
 
-        // 1) Get presigned URL
-        const presignRes = await fetch("/api/s3/upload", {
+        const presignRes = await fetch("/api/profiles3/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -66,7 +63,6 @@ export function ProfileUploader({ onUploadComplete }: ProfileUploaderProps) {
         if (!presignRes.ok) throw new Error("Failed to retrieve presigned URL");
         const { presignedUrl, key } = await presignRes.json();
 
-        // 2) Upload via XHR
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           xhr.open("PUT", presignedUrl);
@@ -79,7 +75,6 @@ export function ProfileUploader({ onUploadComplete }: ProfileUploaderProps) {
           xhr.send(file);
         });
 
-        // 3) Build public URL and notify
         const url = `${BUCKET_BASE}/${key}`;
         setPreviewUrl(url);
         setFileKey(key);

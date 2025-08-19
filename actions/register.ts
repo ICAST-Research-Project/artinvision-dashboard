@@ -49,6 +49,7 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
       profileCreate = {
         artist: {
           create: {
+            name: data.name,
             address: data.address,
             bio: data.bio,
             connect: data.connect,

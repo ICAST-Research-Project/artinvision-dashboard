@@ -28,7 +28,7 @@ export const columns = ({ onToggle }: ColumnsOpts): ColumnDef<ArtworkRow>[] => [
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Title
+        Title.
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
@@ -41,7 +41,15 @@ export const columns = ({ onToggle }: ColumnsOpts): ColumnDef<ArtworkRow>[] => [
       </Link>
     ),
   },
-  { accessorKey: "description", header: "Description" },
+  {
+    accessorKey: "description",
+    header: "Description",
+    cell: ({ row }) => {
+      const full = row.original.description;
+      const truncated = full.length > 15 ? full.slice(0, 50) + "…" : full;
+      return <span>{truncated}</span>;
+    },
+  },
   { accessorKey: "artist", header: "Artist Name" },
   { accessorKey: "categoryName", header: "Category" },
   {

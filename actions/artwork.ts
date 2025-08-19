@@ -16,7 +16,7 @@ import { AccountType } from "@prisma/client";
 
 export type artworkParams = {
   title: string;
-  artist: string;
+  artistId: string;
   description: string;
   imageUrls: string[];
   categoryId: string;
@@ -38,7 +38,7 @@ async function getCurrentUser() {
 
 export const createArtwork = async ({
   title,
-  artist,
+  artistId,
   description,
   categoryId,
   imageUrls,
@@ -49,7 +49,7 @@ export const createArtwork = async ({
     const newArtwork = await db.artwork.create({
       data: {
         title: title,
-        artist: artist,
+        artistId,
         description: description,
         categoryId: categoryId,
         createdById: userId,
@@ -99,14 +99,19 @@ export async function createArtworkByArtist(input: ArtistArtworkInput) {
     artistArtworkSchema.parse(input);
 
   const user = await getCurrentArtist();
-  const artistName = user.name!;
+  // const artistName = user.name!;
+  const artistRow = await db.artist.findUnique({
+    where: { userId: user.id },
+    select: { id: true },
+  });
+  if (!artistRow) throw new Error("Artist profile not found for this user");
 
   const newArtwork = await db.artwork.create({
     data: {
       title,
       description,
       categoryId,
-      artist: artistName,
+      artistId: artistRow.id,
       createdById: user.id,
       creatorType: user.accountType,
       images: { create: imageUrls.map((url) => ({ url })) },
@@ -125,6 +130,12 @@ export async function getAllArtworks() {
     include: {
       category: { select: { id: true, name: true } },
       images: { select: { id: true, url: true } },
+      artistRel: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
   });
 }
@@ -136,6 +147,12 @@ export async function getArtworkById(id: string) {
     include: {
       category: { select: { id: true, name: true } },
       images: { select: { id: true, url: true } },
+      artistRel: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
   });
 }
@@ -183,7 +200,7 @@ export async function updateArtworkByArtist(input: UpdateArtworkInput) {
 }
 
 export async function updateArtworkByCurator(input: UpdateArtworkCuratorInput) {
-  const { id, title, artist, description, categoryId, imageUrls } =
+  const { id, title, artistId, description, categoryId, imageUrls } =
     updateArtworkCuratorSchema.parse(input);
 
   const user = await getCurrentCurator();
@@ -200,7 +217,7 @@ export async function updateArtworkByCurator(input: UpdateArtworkCuratorInput) {
     where: { id },
     data: {
       title,
-      artist,
+      artistId,
       description,
       categoryId,
       images: {

@@ -58,14 +58,20 @@ model Curator {
 }
 
 model Artist {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String   @unique
-  address   String
+  id String @id @default(cuid())
+
+  // NEw
+  name      String
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?  @unique
+  address   String?
   bio       String
   connect   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // NEw
+  artworks Artwork[]
 }
 
 model Category {
@@ -75,14 +81,15 @@ model Category {
 }
 
 model Artwork {
-  id          String         @id @default(cuid())
-  title       String         @db.VarChar(100)
+  id          String @id @default(cuid())
+  title       String @db.VarChar(100)
   description String
-  artist      String         @db.VarChar(100)
-  images      ArtworkImage[]
-  category    Category       @relation(fields: [categoryId], references: [id])
-  categoryId  String
-  published   Boolean        @default(true)
+
+  // artist     String         @db.VarChar(100)
+  images     ArtworkImage[]
+  category   Category       @relation(fields: [categoryId], references: [id])
+  categoryId String
+  published  Boolean        @default(true)
 
   createdBy   User        @relation("UserArtworks", fields: [createdById], references: [id], onDelete: Cascade)
   createdById String
@@ -92,6 +99,10 @@ model Artwork {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // NEw nullable first
+  artistRel Artist? @relation(fields: [artistId], references: [id])
+  artistId  String
 }
 
 model ArtworkImage {

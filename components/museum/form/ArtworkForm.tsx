@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createArtwork } from "@/actions/artwork";
 import { Uploader } from "./Uploader";
 import { Loader2 } from "lucide-react";
+import { ArtistSelect } from "./ArtistSelect";
 
 const ArtworkForm = () => {
   const router = useRouter();
@@ -31,7 +32,7 @@ const ArtworkForm = () => {
     defaultValues: {
       title: "",
       description: "",
-      artist: "",
+      artistId: "",
       categoryId: "",
       imageUrls: [],
     },
@@ -91,17 +92,18 @@ const ArtworkForm = () => {
         />
         <FormField
           control={form.control}
-          name="artist"
+          name="artistId"
           render={({ field }) => (
             <FormItem className="flex flex-col gap-1">
               <FormLabel>Artist Name</FormLabel>
               <FormControl>
-                <Input
+                {/* <Input
                   required
                   placeholder="artist name"
                   {...field}
                   className="min-h-12 border border-gray-100 bg-light-600 p-4 text-base font-semibold placeholder:font-normal placeholder:text-slate-500"
-                />
+                /> */}
+                <ArtistSelect value={field.value} onChange={field.onChange} />
               </FormControl>
               <FormMessage />
             </FormItem>
