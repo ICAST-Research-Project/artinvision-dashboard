@@ -5,6 +5,10 @@ import { getUserById } from "@/data/user";
 
 import { db } from "@/lib/db";
 import {
+  upsertArtworkImageEmbedding,
+  upsertArtworkTextEmbedding,
+} from "@/lib/upsert-embeddings";
+import {
   ArtistArtworkInput,
   artistArtworkSchema,
   UpdateArtworkCuratorInput,
@@ -62,6 +66,13 @@ export const createArtwork = async ({
         images: true,
       },
     });
+    // vector
+    try {
+      await upsertArtworkTextEmbedding(newArtwork.id);
+      await upsertArtworkImageEmbedding(newArtwork.id);
+    } catch (e) {
+      console.error("Embedding (createArtwork) failed", e);
+    }
     return {
       success: true,
       data: JSON.parse(JSON.stringify(newArtwork)),
@@ -118,6 +129,12 @@ export async function createArtworkByArtist(input: ArtistArtworkInput) {
     },
     include: { images: true },
   });
+  try {
+    await upsertArtworkTextEmbedding(newArtwork.id);
+    await upsertArtworkImageEmbedding(newArtwork.id);
+  } catch (e) {
+    console.error("Embedding (createArtworkByArtist) failed", e);
+  }
 
   return { success: true, data: JSON.parse(JSON.stringify(newArtwork)) };
 }
@@ -195,6 +212,12 @@ export async function updateArtworkByArtist(input: UpdateArtworkInput) {
       category: { select: { id: true, name: true } },
     },
   });
+  try {
+    await upsertArtworkTextEmbedding(id);
+    await upsertArtworkImageEmbedding(id);
+  } catch (e) {
+    console.error("Embedding (updateArtworkByArtist) failed", e);
+  }
 
   return { success: true, data: JSON.parse(JSON.stringify(updated)) };
 }
@@ -230,6 +253,12 @@ export async function updateArtworkByCurator(input: UpdateArtworkCuratorInput) {
       category: { select: { id: true, name: true } },
     },
   });
+  try {
+    await upsertArtworkTextEmbedding(id);
+    await upsertArtworkImageEmbedding(id);
+  } catch (e) {
+    console.error("Embedding (updateArtworkByCurator) failed", e);
+  }
 
   return { success: true, data: JSON.parse(JSON.stringify(updated)) };
 }

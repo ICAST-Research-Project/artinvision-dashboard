@@ -60,7 +60,6 @@ model Curator {
 model Artist {
   id String @id @default(cuid())
 
-  // NEw
   name      String
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String?  @unique
@@ -70,8 +69,8 @@ model Artist {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // NEw
-  artworks Artwork[]
+  artworks            Artwork[]
+  ArtistEmbeddingText ArtistEmbeddingText?
 }
 
 model Category {
@@ -85,7 +84,6 @@ model Artwork {
   title       String @db.VarChar(100)
   description String
 
-  // artist     String         @db.VarChar(100)
   images     ArtworkImage[]
   category   Category       @relation(fields: [categoryId], references: [id])
   categoryId String
@@ -100,9 +98,14 @@ model Artwork {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // NEw nullable first
-  artistRel Artist? @relation(fields: [artistId], references: [id])
-  artistId  String
+  artistRel             Artist?                @relation(fields: [artistId], references: [id])
+  artistId              String
+  ArtworkEmbeddingText  ArtworkEmbeddingText?
+  ArtworkEmbeddingImage ArtworkEmbeddingImage?
+
+  @@index([artistId])
+  @@index([categoryId])
+  @@index([published])
 }
 
 model ArtworkImage {
@@ -110,6 +113,8 @@ model ArtworkImage {
   url       String
   artwork   Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
   artworkId String
+
+  @@index([artworkId])
 }
 
 model VerificationToken {
@@ -158,4 +163,39 @@ model CollectionArtwork {
   artworkId    String
 
   @@id([collectionId, artworkId])
+  @@index([artworkId])
+}
+
+model ArtworkEmbeddingText {
+  artworkId String  @id @map("artwork_id")
+  artwork   Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  model     String
+
+  embedding Unsupported("vector")
+  createdAt DateTime              @default(now()) @map("created_at")
+  updatedAt DateTime              @updatedAt @map("updated_at")
+
+  @@map("artwork_embeddings_text")
+}
+
+model ArtworkEmbeddingImage {
+  artworkId String                @id @map("artwork_id")
+  artwork   Artwork               @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  model     String
+  embedding Unsupported("vector")
+  createdAt DateTime              @default(now()) @map("created_at")
+  updatedAt DateTime              @updatedAt @map("updated_at")
+
+  @@map("artwork_embeddings_image")
+}
+
+model ArtistEmbeddingText {
+  artistId  String                @id @map("artist_id")
+  artist    Artist                @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  model     String
+  embedding Unsupported("vector")
+  createdAt DateTime              @default(now()) @map("created_at")
+  updatedAt DateTime              @updatedAt @map("updated_at")
+
+  @@map("artist_embeddings_text")
 }
