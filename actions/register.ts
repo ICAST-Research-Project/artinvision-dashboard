@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { getUserByEmail } from "@/data/user";
 import { generateVerificationToken } from "@/lib/token";
 import { sendVerificationEmail } from "@/lib/mail";
+import { upsertArtistTextEmbedding } from "@/lib/upsert-embeddings";
 
 export const register = async (values: z.infer<typeof RegisterSchema>) => {
   const parsed = RegisterSchema.safeParse(values);
@@ -70,6 +71,22 @@ export const register = async (values: z.infer<typeof RegisterSchema>) => {
       ...profileCreate,
     },
   });
+
+  // vector
+  if (data.accountType === "ARTIST") {
+    try {
+      const userWithArtist = await db.user.findUnique({
+        where: { email: data.email },
+        include: { artist: { select: { id: true } } },
+      });
+      const artistId = userWithArtist?.artist?.id;
+      if (artistId) {
+        await upsertArtistTextEmbedding(artistId);
+      }
+    } catch (e) {
+      console.error("Artist embedding (register) failed", e);
+    }
+  }
 
   const verificationToken = await generateVerificationToken(data.email);
   await sendVerificationEmail(verificationToken.email, verificationToken.token);

@@ -1,6 +1,7 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { upsertArtistTextEmbedding } from "@/lib/upsert-embeddings";
 import { z } from "zod";
 
 const createArtistQuickSchema = z.object({
@@ -27,5 +28,12 @@ export async function createArtistQuick(
     data: { name: parsed.data.name, bio: parsed.data.bio },
     select: { id: true, name: true },
   });
+  // vector
+  try {
+    await upsertArtistTextEmbedding(a.id);
+  } catch (e) {
+    console.error("Artist embedding (createArtistQuick) failed", e);
+  }
+
   return { success: true, data: a };
 }
