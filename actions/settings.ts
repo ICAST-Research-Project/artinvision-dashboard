@@ -10,6 +10,7 @@ import { getUserById } from "@/data/user";
 import { db } from "@/lib/db";
 import { AccountType } from "@prisma/client";
 import { auth } from "@/auth";
+import { upsertArtistTextEmbedding } from "@/lib/embeddings/artist";
 
 export const getCurrentMuseumAdmin = async () => {
   const session = await auth();
@@ -112,24 +113,61 @@ export const getCurrentCurator = async () => {
   };
 };
 
+// export const curatorSettings = async (
+//   values: z.infer<typeof curatorSettingsSchema>
+// ) => {
+//   const user = await getCurrentUser();
+
+//   if (!user) {
+//     return { error: "Unauthorized" };
+//   }
+
+//   const dbUser = await db.user.findUnique({
+//     where: { id: user.id },
+//     include: { curator: true },
+//   });
+
+//   if (!dbUser) {
+//     return { error: "Unauthorized" };
+//   }
+
+//   await db.user.update({
+//     where: { id: dbUser.id },
+//     data: {
+//       name: values.name,
+//       phone: values.phone,
+//     },
+//   });
+
+//   if (dbUser.curator?.id) {
+//     await db.curator.update({
+//       where: {
+//         id: dbUser.curator.id,
+//       },
+//       data: {
+//         about: values.about,
+//         address: values.address,
+//         connect: values.connect,
+//       },
+//     });
+//   }
+
+//   return { success: "Profile Updated" };
+// };
+
 export const curatorSettings = async (
   values: z.infer<typeof curatorSettingsSchema>
 ) => {
   const user = await getCurrentUser();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
+  if (!user) return { error: "Unauthorized" };
 
   const dbUser = await db.user.findUnique({
     where: { id: user.id },
     include: { curator: true },
   });
+  if (!dbUser) return { error: "Unauthorized" };
 
-  if (!dbUser) {
-    return { error: "Unauthorized" };
-  }
-
+  // 1) Update basic user fields
   await db.user.update({
     where: { id: dbUser.id },
     data: {
@@ -138,11 +176,10 @@ export const curatorSettings = async (
     },
   });
 
+  // 2) Update Curator profile
   if (dbUser.curator?.id) {
     await db.curator.update({
-      where: {
-        id: dbUser.curator.id,
-      },
+      where: { id: dbUser.curator.id },
       data: {
         about: values.about,
         address: values.address,
@@ -150,6 +187,37 @@ export const curatorSettings = async (
       },
     });
   }
+
+  // 3) Mirror to Artist and re-embed
+  //    - Ensure an Artist row exists for this user
+  //    - Keep Artist.name in sync with User.name (fallback to email local-part)
+  const displayName =
+    (values.name && values.name.trim()) ||
+    (dbUser.name && dbUser.name.trim()) ||
+    (dbUser.email ? dbUser.email.split("@")[0] : "Untitled Artist");
+
+  const me = await db.artist.upsert({
+    where: { userId: dbUser.id }, // unique on Artist.userId
+    update: {
+      name: displayName,
+      bio: values.about ?? "", // mirror curator.about
+    },
+    create: {
+      userId: dbUser.id,
+      name: displayName,
+      bio: values.about ?? "",
+    },
+    select: { id: true },
+  });
+
+  // 4) Refresh artist text embedding (name + bio)
+  try {
+    await upsertArtistTextEmbedding(me.id);
+  } catch (e) {
+    console.error("Artist re-embed failed", e);
+    // do not fail the settings update over embeddings
+  }
+
   return { success: "Profile Updated" };
 };
 
@@ -203,7 +271,7 @@ export const artistSettings = async (
   });
 
   if (dbUser.artist?.id) {
-    await db.artist.update({
+    const updated = await db.artist.update({
       where: {
         id: dbUser.artist.id,
       },
@@ -211,8 +279,19 @@ export const artistSettings = async (
         bio: values.bio,
         address: values.address,
         connect: values.connect,
+        name:
+          values.name ??
+          dbUser.name ??
+          dbUser.email?.split("@")[0] ??
+          "Untitled Artist",
       },
+      select: { id: true },
     });
+    try {
+      await upsertArtistTextEmbedding(updated.id);
+    } catch (e) {
+      console.error("Artist re-embed failed", e);
+    }
   }
   return { success: "Profile Updated" };
 };

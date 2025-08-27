@@ -25,43 +25,41 @@ import { Loader2 } from "lucide-react";
 import { Uploader } from "./Uploader";
 import Dropdown from "./Dropdown";
 import { ArtistSelect } from "./ArtistSelect";
+import { Switch } from "@/components/ui/switch";
 
-type FormValues = z.infer<typeof artworkSchema>;
+type FormInput = z.input<typeof artworkSchema>;
+type FormOutput = z.output<typeof artworkSchema>;
 
 interface ArtworkFormProps {
   id?: string;
 
-  initialValues?: FormValues;
+  initialValues?: FormOutput;
 }
 
 const ArtworkForm = ({ id, initialValues }: ArtworkFormProps) => {
   const router = useRouter();
   const isEdit = Boolean(id);
 
-  const form = useForm<z.infer<typeof artworkSchema>>({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const form = useForm<FormInput, any, FormOutput>({
     resolver: zodResolver(artworkSchema),
-    defaultValues: initialValues ?? {
-      title: "",
-      description: "",
-      artistId: "",
-      categoryId: "",
-      imageUrls: [],
-    },
+    defaultValues:
+      initialValues ??
+      ({
+        title: "",
+        description: "",
+        artistId: "",
+        categoryId: "",
+        imageUrls: [],
+        meAsArtist: false,
+        ...(initialValues ?? {}),
+      } as FormInput),
   });
 
   const { isSubmitting } = form.formState;
+  const meAsArtist = form.watch("meAsArtist");
 
-  // const onSubmit = async (values: z.infer<typeof artworkSchema>) => {
-  //   const result = await createArtwork(values);
-
-  //   if (result.success) {
-  //     toast("Artwork created successfully");
-  //     router.push(`/curator/artworks/${result.data.id}`);
-  //   } else {
-  //     toast("Something went wrong!");
-  //   }
-  // };
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: FormOutput) => {
     try {
       if (isEdit) {
         const result = await updateArtworkByCurator({ id: id!, ...values });
@@ -126,25 +124,48 @@ const ArtworkForm = ({ id, initialValues }: ArtworkFormProps) => {
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
-          name="artistId"
+          name="meAsArtist"
           render={({ field }) => (
-            <FormItem className="flex flex-col gap-1">
-              <FormLabel>Select Artist</FormLabel>
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+              <div className="space-y-1">
+                <FormLabel>I’m the artist</FormLabel>
+                <p className="text-sm text-muted-foreground">
+                  Use your curator account’s artist profile for this artwork.
+                </p>
+              </div>
               <FormControl>
-                {/* <Input
-                  required
-                  placeholder="artist name"
-                  {...field}
-                  className="min-h-12 border border-gray-100 bg-light-600 p-4 text-base font-semibold placeholder:font-normal placeholder:text-slate-500"
-                /> */}
-                <ArtistSelect value={field.value} onChange={field.onChange} />
+                <Switch
+                  checked={field.value ?? false}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked);
+                    if (checked) {
+                      form.setValue("artistId", "", { shouldValidate: true });
+                    }
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        {!meAsArtist && (
+          <FormField
+            control={form.control}
+            name="artistId"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-1">
+                <FormLabel>Select Artist</FormLabel>
+                <FormControl>
+                  <ArtistSelect value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="categoryId"

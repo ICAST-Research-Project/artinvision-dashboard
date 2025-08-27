@@ -1,27 +1,43 @@
 import React from "react";
 import Link from "next/link";
-import { getAllArtworks } from "@/actions/artwork";
+import { getAllArtworks, type ArtworkFilter } from "@/actions/artwork";
 import type { Artwork } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";
 import { ArtworkCard } from "@/components/curator/ArtworkCard";
+import { ArtworkFilterSelect } from "@/components/curator/ArtworkFilterSelect";
 
-const Page = async () => {
-  const artworks = await getAllArtworks();
+type PageProps = {
+  searchParams: Promise<{
+    filter?: "all" | "self" | "others";
+  }>;
+};
+
+const Page = async ({ searchParams }: PageProps) => {
+  const sp = await searchParams;
+  const f = sp?.filter;
+  const filter: ArtworkFilter =
+    f === "self" || f === "others" || f === "all" ? f : "all";
+
+  const artworks = await getAllArtworks(filter);
 
   return (
     <div className="p-6">
-      <div className="flex flex-wrap justify-between pb-4">
-        <h1 className="text-3xl font-bold mb-6">My Artworks</h1>
-        <Button className="bg-blue-500" asChild>
-          <Link href="/curator/artworks/new" className="text-white">
-            + Add Artwork
-          </Link>
-        </Button>
+      <div className="flex flex-wrap items-center justify-between pb-4 gap-3">
+        <h1 className="text-3xl font-bold">Artworks</h1>
+        <div className="flex items-center gap-3">
+          <ArtworkFilterSelect />
+          <Button className="bg-blue-500" asChild>
+            <Link href="/curator/artworks/new" className="text-white">
+              + Add Artwork
+            </Link>
+          </Button>
+        </div>
       </div>
+
       {artworks.length === 0 ? (
         <p className="text-gray-600">
-          You haven’t added any artwork yet.{" "}
+          No artworks match this filter.{" "}
           <Link
             href="/curator/artworks/new"
             className="text-blue-500 underline"

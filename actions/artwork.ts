@@ -2,8 +2,10 @@
 
 import { auth } from "@/auth";
 import { getUserById } from "@/data/user";
+import { Prisma } from "@prisma/client";
 
 import { db } from "@/lib/db";
+import { upsertArtistTextEmbedding } from "@/lib/embeddings/artist";
 import {
   upsertArtworkImageEmbedding,
   upsertArtworkTextEmbedding,
@@ -11,8 +13,8 @@ import {
 import {
   ArtistArtworkInput,
   artistArtworkSchema,
-  UpdateArtworkCuratorInput,
-  updateArtworkCuratorSchema,
+  // UpdateArtworkCuratorInput,
+  // updateArtworkCuratorSchema,
   UpdateArtworkInput,
   updateArtworkSchema,
 } from "@/schemas";
@@ -24,6 +26,7 @@ export type artworkParams = {
   description: string;
   imageUrls: string[];
   categoryId: string;
+  meAsArtist: boolean;
 };
 
 async function getCurrentUser() {
@@ -46,40 +49,82 @@ export const createArtwork = async ({
   description,
   categoryId,
   imageUrls,
+  meAsArtist,
 }: artworkParams) => {
   try {
-    const { id: userId, accountType } = await getCurrentUser();
+    const auth = await getCurrentUser();
+    if (!auth) return { success: false, message: "Unauthorized" };
+    const { id: userId, accountType } = auth;
+
+    const [u, curator] = await Promise.all([
+      db.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      }),
+      db.curator.findUnique({ where: { userId }, select: { about: true } }),
+    ]);
+
+    const displayName =
+      (u?.name && u.name.trim()) ||
+      (u?.email ? u.email.split("@")[0] : null) ||
+      "Untitled Artist";
+    const bioText = curator?.about ?? "";
+
+    let finalArtistId: string | null = artistId || null;
+
+    if (meAsArtist) {
+      const me = await db.artist.upsert({
+        where: { userId },
+        update: {
+          name: displayName,
+          bio: bioText,
+        },
+        create: {
+          userId,
+          name: displayName,
+          bio: bioText,
+        },
+        select: { id: true },
+      });
+      finalArtistId = me.id;
+
+      try {
+        await upsertArtistTextEmbedding(me.id);
+      } catch (e) {
+        console.error("Embedding (artist text) failed", e);
+      }
+    }
+
+    if (!finalArtistId) {
+      return {
+        success: false,
+        message: 'Artist is required (pick one or choose "I’m the artist").',
+      };
+    }
 
     const newArtwork = await db.artwork.create({
       data: {
-        title: title,
-        artistId,
-        description: description,
-        categoryId: categoryId,
+        title,
+        artistId: finalArtistId,
+        description,
+        categoryId,
         createdById: userId,
         creatorType: accountType,
-        images: {
-          create: imageUrls.map((url) => ({ url })),
-        },
+        images: { create: imageUrls.map((url) => ({ url })) },
       },
-      include: {
-        images: true,
-      },
+      include: { images: true },
     });
-    // vector
+
     try {
       await upsertArtworkTextEmbedding(newArtwork.id);
       await upsertArtworkImageEmbedding(newArtwork.id);
     } catch (e) {
       console.error("Embedding (createArtwork) failed", e);
     }
-    return {
-      success: true,
-      data: JSON.parse(JSON.stringify(newArtwork)),
-    };
-  } catch (error) {
-    console.log(error);
 
+    return { success: true, data: JSON.parse(JSON.stringify(newArtwork)) };
+  } catch (error) {
+    console.error(error);
     return {
       success: false,
       message: "An error occured while creating the artwork",
@@ -96,6 +141,7 @@ async function getCurrentArtist() {
   return user;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getCurrentCurator() {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Not authenticated");
@@ -110,7 +156,7 @@ export async function createArtworkByArtist(input: ArtistArtworkInput) {
     artistArtworkSchema.parse(input);
 
   const user = await getCurrentArtist();
-  // const artistName = user.name!;
+
   const artistRow = await db.artist.findUnique({
     where: { userId: user.id },
     select: { id: true },
@@ -139,20 +185,51 @@ export async function createArtworkByArtist(input: ArtistArtworkInput) {
   return { success: true, data: JSON.parse(JSON.stringify(newArtwork)) };
 }
 
-export async function getAllArtworks() {
+// export async function getAllArtworks() {
+//   const user = await getCurrentUser();
+//   return await db.artwork.findMany({
+//     where: { createdById: user.id },
+//     orderBy: { createdAt: "desc" },
+//     include: {
+//       category: { select: { id: true, name: true } },
+//       images: { select: { id: true, url: true } },
+//       artistRel: {
+//         select: {
+//           id: true,
+//           name: true,
+//         },
+//       },
+//     },
+//   });
+// }
+// actions/artwork.ts
+
+export type ArtworkFilter = "all" | "self" | "others";
+export async function getAllArtworks(filter: ArtworkFilter = "all") {
   const user = await getCurrentUser();
-  return await db.artwork.findMany({
-    where: { createdById: user.id },
+
+  const and: Prisma.ArtworkWhereInput[] = [{ createdById: user.id }];
+
+  if (filter === "self") {
+    and.push({ artistRel: { is: { userId: user.id } } });
+  } else if (filter === "others") {
+    and.push({
+      OR: [
+        { artistRel: { is: { userId: null } } },
+        { artistRel: { is: { userId: { not: user.id } } } },
+      ],
+    });
+  }
+
+  const where: Prisma.ArtworkWhereInput = { AND: and };
+
+  return db.artwork.findMany({
+    where,
     orderBy: { createdAt: "desc" },
     include: {
       category: { select: { id: true, name: true } },
       images: { select: { id: true, url: true } },
-      artistRel: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
+      artistRel: { select: { id: true, name: true, userId: true } },
     },
   });
 }
@@ -222,46 +299,74 @@ export async function updateArtworkByArtist(input: UpdateArtworkInput) {
   return { success: true, data: JSON.parse(JSON.stringify(updated)) };
 }
 
-export async function updateArtworkByCurator(input: UpdateArtworkCuratorInput) {
-  const { id, title, artistId, description, categoryId, imageUrls } =
-    updateArtworkCuratorSchema.parse(input);
+export const updateArtworkByCurator = async ({
+  id,
+  title,
+  artistId,
+  description,
+  categoryId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  imageUrls,
+  meAsArtist,
+}: { id: string } & artworkParams) => {
+  const auth = await getCurrentUser();
+  if (!auth) return { success: false, message: "Unauthorized" };
+  const { id: userId } = auth;
 
-  const user = await getCurrentCurator();
+  const [u, curator] = await Promise.all([
+    db.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    }),
+    db.curator.findUnique({ where: { userId }, select: { about: true } }),
+  ]);
+  const displayName =
+    (u?.name && u.name.trim()) ||
+    (u?.email ? u.email.split("@")[0] : null) ||
+    "Untitled Artist";
+  const bioText = curator?.about ?? "";
 
-  const existing = await db.artwork.findUnique({
-    where: { id },
-    select: { createdById: true },
-  });
-  if (!existing || existing.createdById !== user.id) {
-    throw new Error("Artwork not found or your not its owner.");
+  let finalArtistId: string | null = artistId || null;
+
+  if (meAsArtist) {
+    const me = await db.artist.upsert({
+      where: { userId },
+      update: { name: displayName, bio: bioText },
+      create: { userId, name: displayName, bio: bioText },
+      select: { id: true },
+    });
+    finalArtistId = me.id;
+
+    try {
+      await upsertArtistTextEmbedding(me.id);
+    } catch (e) {
+      console.error("Embedding (artist text) failed", e);
+    }
+  }
+
+  if (!finalArtistId) {
+    return {
+      success: false,
+      message: 'Artist is required (pick one or choose "I’m the artist").',
+    };
   }
 
   const updated = await db.artwork.update({
     where: { id },
     data: {
       title,
-      artistId,
       description,
       categoryId,
-      images: {
-        deleteMany: {},
-        create: imageUrls.map((url) => ({ url })),
-      },
+      artistId: finalArtistId,
     },
-    include: {
-      images: true,
-      category: { select: { id: true, name: true } },
-    },
+    include: { images: true },
   });
-  try {
-    await upsertArtworkTextEmbedding(id);
-    await upsertArtworkImageEmbedding(id);
-  } catch (e) {
-    console.error("Embedding (updateArtworkByCurator) failed", e);
-  }
 
+  try {
+    await upsertArtworkTextEmbedding(updated.id);
+  } catch {}
   return { success: true, data: JSON.parse(JSON.stringify(updated)) };
-}
+};
 
 export async function deleteArtworkByArtistById(
   artworkId: string

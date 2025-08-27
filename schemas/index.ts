@@ -44,13 +44,19 @@ export const RegisterSchema = z.discriminatedUnion("accountType", [
   }),
 ]);
 
-export const artworkSchema = z.object({
-  title: z.string().trim().min(2).max(100),
-  description: z.string().min(10),
-  artistId: z.string().min(1, "Select an artist"),
-  imageUrls: z.array(z.url()).min(1, "Upload at least one image"),
-  categoryId: z.string(),
-});
+export const artworkSchema = z
+  .object({
+    title: z.string().trim().min(2).max(100),
+    description: z.string().min(10),
+    artistId: z.string().optional().default(""),
+    imageUrls: z.array(z.url()).min(1, "Upload at least one image"),
+    categoryId: z.string(),
+    meAsArtist: z.boolean().optional().default(false),
+  })
+  .refine((v) => v.meAsArtist || !!v.artistId, {
+    path: ["artistId"],
+    message: "Pick an artist or choose “I’m the artist”.",
+  });
 
 export const collectionSchema = z.object({
   name: z.string().trim().min(2),

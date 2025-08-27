@@ -58,7 +58,7 @@ export const curatorSidebarLinks = [
   {
     img: "/artworks.png",
     route: "/curator/artworks",
-    text: "My Artworks",
+    text: "Artworks",
   },
   {
     img: "/add.png",
