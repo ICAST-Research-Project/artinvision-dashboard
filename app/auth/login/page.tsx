@@ -16,7 +16,7 @@ const LoginPage = () => {
       "
     >
       <div className="w-full max-w-md">
-        <LoginForm />;
+        <LoginForm />
       </div>
     </main>
   );

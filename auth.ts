@@ -6,6 +6,7 @@ import { getUserById } from "./data/user";
 import { AccountType } from "@prisma/client";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: process.env.AUTH_TRUST_HOST === "true",
   callbacks: {
     async session({ token, session }) {
       if (token.sub && session.user) {
