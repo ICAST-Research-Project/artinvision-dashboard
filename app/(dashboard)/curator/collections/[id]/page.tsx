@@ -73,7 +73,7 @@ export default async function CollectionPage({
                 <div className="flex flex-col gap-2">
                   <Badge variant="outline">{artwork.category.name}</Badge>
                   <span className="text-orange-600 italic px-2 py-1 text-xs">
-                    {artwork.artist}
+                    {artwork.artistId}
                   </span>
                 </div>
               </CardContent>

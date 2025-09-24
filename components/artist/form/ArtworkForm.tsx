@@ -36,26 +36,31 @@ interface ArtworkFormProps {
   initialValues?: Omit<FormValues, "artist">;
 }
 
+type FormInput = z.input<typeof artistArtworkSchema>;
+type FormOutput = z.output<typeof artistArtworkSchema>;
+
 export default function ArtworkForm({ id, initialValues }: ArtworkFormProps) {
   const router = useRouter();
   const isEdit = Boolean(id);
 
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput>({
     resolver: zodResolver(artistArtworkSchema),
     defaultValues: initialValues ?? {
       title: "",
       description: "",
       categoryId: "",
       imageUrls: [],
+      meAsArtist: false,
     },
   });
 
   const { isSubmitting } = form.formState;
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: FormInput) => {
+    const data: FormOutput = artistArtworkSchema.parse(values);
     try {
       if (isEdit) {
-        const result = await updateArtworkByArtist({ id: id!, ...values });
+        const result = await updateArtworkByArtist({ id: id!, ...data });
         if (result.success) {
           toast.success("Artwork updated successfully");
           router.push(`/artist/artworks/${id}`);
@@ -63,7 +68,7 @@ export default function ArtworkForm({ id, initialValues }: ArtworkFormProps) {
         }
         toast.error("Failed to update artwork");
       } else {
-        const result = await createArtworkByArtist(values);
+        const result = await createArtworkByArtist(data);
         if (result.success) {
           toast.success("Artwork created successfully");
           router.push(`/artist/artworks/${result.data.id}`);
@@ -154,4 +159,3 @@ export default function ArtworkForm({ id, initialValues }: ArtworkFormProps) {
     </Form>
   );
 }
-  

@@ -27,6 +27,7 @@ const EditPage = async ({ params }: EditPageProps) => {
           description: art.description,
           categoryId: art.categoryId,
           imageUrls: art.images.map((i) => i.url),
+          meAsArtist: true,
         }}
       />
     </div>

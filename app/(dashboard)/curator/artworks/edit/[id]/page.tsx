@@ -25,10 +25,11 @@ const EditPage = async ({ params }: EditPageProps) => {
         id={id}
         initialValues={{
           title: art.title,
-          artist: art.artist,
           description: art.description,
           categoryId: art.categoryId,
           imageUrls: art.images.map((i) => i.url),
+          artistId: art.artistId ?? "",
+          meAsArtist: false,
         }}
       />
     </div>
