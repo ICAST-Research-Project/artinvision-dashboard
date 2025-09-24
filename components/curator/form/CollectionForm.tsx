@@ -262,7 +262,7 @@ const CollectionForm: React.FC<Props> = ({
                       {art.category.name}
                     </span>
                     <span className=" text-orange-600 italic px-2 py-1  text-xs">
-                      {art.artist}
+                      {art.artistId}
                     </span>
                   </div>
                   {isDisabled && (

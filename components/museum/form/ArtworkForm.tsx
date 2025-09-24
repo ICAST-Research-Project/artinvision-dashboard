@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 
 import {
@@ -24,10 +24,13 @@ import { Uploader } from "./Uploader";
 import { Loader2 } from "lucide-react";
 import { ArtistSelect } from "./ArtistSelect";
 
+type FormInput = z.input<typeof artworkSchema>; // artistId?: string; meAsArtist?: boolean
+type FormOutput = z.output<typeof artworkSchema>;
+
 const ArtworkForm = () => {
   const router = useRouter();
 
-  const form = useForm<z.infer<typeof artworkSchema>>({
+  const form = useForm<FormInput>({
     resolver: zodResolver(artworkSchema),
     defaultValues: {
       title: "",
@@ -35,14 +38,16 @@ const ArtworkForm = () => {
       artistId: "",
       categoryId: "",
       imageUrls: [],
+      meAsArtist: false,
     },
   });
 
   const { isSubmitting } = form.formState;
 
-  const onSubmit = async (values: z.infer<typeof artworkSchema>) => {
-    const result = await createArtwork(values);
-
+  // const onSubmit = async (values: z.infer<typeof artworkSchema>) => {
+  const onSubmit: SubmitHandler<FormInput> = async (values) => {
+    const data: FormOutput = artworkSchema.parse(values);
+    const result = await createArtwork(data);
     if (result.success) {
       toast("Artwork created successfully");
       router.push(`/museum/artworks/${result.data.id}`);
