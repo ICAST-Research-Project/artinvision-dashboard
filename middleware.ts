@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // import { NextResponse } from "next/server";
 // import type { NextRequest } from "next/server";
 // import { getToken } from "next-auth/jwt";
@@ -161,69 +162,66 @@ import { NextResponse } from "next/server";
 const publicRoutes = ["/", "/auth/login", "/auth/register"];
 
 export default auth((req) => {
-  const { nextUrl } = req;
-  const pathname = nextUrl.pathname;
+  try {
+    const { nextUrl } = req;
+    const pathname = nextUrl.pathname;
 
-  // allowlisted endpoints/assets
-  if (
-    pathname.startsWith("/api/s3/") ||
-    pathname.startsWith("/api/profiles3") ||
-    pathname === "/api/museums" ||
-    pathname.startsWith("/api/museums/") ||
-    pathname.startsWith("/api/collections/") ||
-    pathname === "/api/collections" ||
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/_next/") ||
-    pathname.startsWith("/static/") ||
-    pathname.startsWith("/favicon") ||
-    /\.[\w]+$/.test(pathname)
-  ) {
-    return;
-  }
+    if (
+      pathname.startsWith("/api/s3/") ||
+      pathname.startsWith("/api/profiles3") ||
+      pathname === "/api/museums" ||
+      pathname.startsWith("/api/museums/") ||
+      pathname.startsWith("/api/collections/") ||
+      pathname === "/api/collections" ||
+      pathname.startsWith("/api/auth") ||
+      pathname.startsWith("/_next/") ||
+      pathname.startsWith("/static/") ||
+      pathname.startsWith("/favicon") ||
+      /\.[\w]+$/.test(pathname)
+    )
+      return;
 
-  const isAuthPage = pathname.startsWith("/auth/");
-  const isPublic = publicRoutes.includes(pathname);
-  const isLoggedIn = !!req.auth;
+    const isAuthPage = pathname.startsWith("/auth/");
+    const isPublic = publicRoutes.includes(pathname);
+    const isLoggedIn = !!req.auth;
 
-  if (isAuthPage && isLoggedIn) {
-    const paramNext = nextUrl.searchParams.get("next");
+    if (isAuthPage && isLoggedIn) {
+      const paramNext = nextUrl.searchParams.get("next");
+      const role = req.auth?.user?.accountType as
+        | "CURATOR"
+        | "MUSEUM_ADMIN"
+        | "ARTIST"
+        | undefined;
+      const byRole =
+        (role === "ARTIST" && "/artist") ||
+        (role === "CURATOR" && "/curator") ||
+        (role === "MUSEUM_ADMIN" && "/museum") ||
+        "/";
+      return NextResponse.redirect(new URL(paramNext || byRole, nextUrl));
+    }
+
+    if (isPublic || isAuthPage) return;
+
+    if (!isLoggedIn) {
+      const url = new URL("/auth/login", nextUrl);
+      url.searchParams.set("next", pathname + nextUrl.search);
+      return NextResponse.redirect(url);
+    }
+
     const role = req.auth?.user?.accountType as
       | "CURATOR"
       | "MUSEUM_ADMIN"
       | "ARTIST"
       | undefined;
-
-    const byRole =
-      (role === "ARTIST" && "/artist") ||
-      (role === "CURATOR" && "/curator") ||
-      (role === "MUSEUM_ADMIN" && "/museum") ||
-      "/";
-
-    return NextResponse.redirect(new URL(paramNext || byRole, nextUrl));
-  }
-
-  if (isPublic || isAuthPage) return;
-
-  if (!isLoggedIn) {
-    const url = new URL("/auth/login", nextUrl);
-    url.searchParams.set("next", pathname + nextUrl.search);
-    return NextResponse.redirect(url);
-  }
-
-  const role = req.auth?.user?.accountType as
-    | "CURATOR"
-    | "MUSEUM_ADMIN"
-    | "ARTIST"
-    | undefined;
-
-  if (pathname.startsWith("/curator") && role !== "CURATOR") {
-    return NextResponse.redirect(new URL("/", nextUrl));
-  }
-  if (pathname.startsWith("/museum") && role !== "MUSEUM_ADMIN") {
-    return NextResponse.redirect(new URL("/", nextUrl));
-  }
-  if (pathname.startsWith("/artist") && role !== "ARTIST") {
-    return NextResponse.redirect(new URL("/", nextUrl));
+    if (pathname.startsWith("/curator") && role !== "CURATOR")
+      return NextResponse.redirect(new URL("/", nextUrl));
+    if (pathname.startsWith("/museum") && role !== "MUSEUM_ADMIN")
+      return NextResponse.redirect(new URL("/", nextUrl));
+    if (pathname.startsWith("/artist") && role !== "ARTIST")
+      return NextResponse.redirect(new URL("/", nextUrl));
+  } catch (err: any) {
+    console.error("[MIDDLEWARE ERROR]", err?.stack || err);
+    return NextResponse.next();
   }
 });
 

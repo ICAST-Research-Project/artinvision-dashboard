@@ -41,42 +41,48 @@
 
 // auth.ts
 import NextAuth from "next-auth";
+import type { NextAuthConfig } from "next-auth";
 import authConfig from "./auth.config";
 
-// ⚠️ Do NOT import Prisma or DB at the top level in this file.
-//    The edge export (used by middleware) must stay Node-free.
-
-// ---- Shared base (edge-safe) ----
-const base = {
+// ----- Edge-safe base config (NO Prisma/db imports here) -----
+const base: NextAuthConfig = {
   ...authConfig,
-  session: { strategy: "jwt" as const },
+  session: { strategy: "jwt" },
   trustHost: process.env.AUTH_TRUST_HOST === "true",
   callbacks: {
-    async session({ token, session }: any) {
-      if (token?.sub && session.user) session.user.id = token.sub;
+    async session({ token, session }) {
+      if (token?.sub && session.user) (session.user as any).id = token.sub;
       if (token?.accountType && session.user)
-        (session.user as any).accountType = token.accountType;
+        (session.user as any).accountType = (token as any).accountType;
       if (session.user) {
-        session.user.name = token.name;
-        session.user.email = token.email ?? "";
+        session.user.name = token?.name as any;
+        session.user.email = (token?.email as any) ?? "";
       }
       return session;
     },
-    // Edge-safe: no DB calls here
-    async jwt({ token }: any) {
+    // Edge version: keep simple; no DB here
+    async jwt({ token }) {
       return token;
     },
   },
+  // If you want logging, use v5 signatures. Otherwise omit logger entirely.
+  // logger: {
+  //   error(error) { console.error("[AUTH ERROR]", error); },
+  //   warn(code) { console.warn("[AUTH WARN]", code); },
+  //   debug(message, ...meta) {
+  //     if (process.env.NODE_ENV !== "production") console.debug("[AUTH DEBUG]", message, ...meta);
+  //   },
+  // },
 };
 
-// 1) Edge-safe export for middleware (NO adapter, NO DB)
+// 1) Edge-safe export for middleware (no adapter)
 export const { auth } = NextAuth({
   ...base,
 });
 
 // 2) Node-only exports for routes/pages (WITH Prisma adapter + DB lookups)
 function getNodeAdapter() {
-  // Lazy-require so it isn't bundled into the edge export above
+  // lazy require so Prisma isn't bundled into the edge export above
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { PrismaAdapter } = require("@auth/prisma-adapter");
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -84,10 +90,9 @@ function getNodeAdapter() {
   return PrismaAdapter(db);
 }
 
-// Node-only jwt that can hit the DB
 async function nodeJwtCallback({ token }: any) {
   if (!token?.sub) return token;
-  // Lazy-require to keep edge bundle clean
+  // lazy require to keep edge clean
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { getUserById } = require("./data/user");
   const existingUser = await getUserById(token.sub);
@@ -103,7 +108,7 @@ export const { handlers, signIn, signOut } = NextAuth({
   ...base,
   adapter: getNodeAdapter(),
   callbacks: {
-    ...base.callbacks,
+    ...base.callbacks!,
     jwt: nodeJwtCallback,
   },
 });
