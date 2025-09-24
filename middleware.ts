@@ -30,7 +30,10 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req });
+  const token = await getToken({
+    req,
+    secureCookie: process.env.NODE_ENV === "production",
+  });
   const isLoggedIn = !!token;
   const isAuthPage = pathname.startsWith("/auth/");
   const isPublic = publicRoutes.includes(pathname);
