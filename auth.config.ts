@@ -4,7 +4,7 @@ import bcryptjs from "bcryptjs";
  
 import { LoginSchema } from "./schemas";
 import { getUserByEmail } from "./data/user";
- 
+  
 export default {
   providers: [
     Credentials({
