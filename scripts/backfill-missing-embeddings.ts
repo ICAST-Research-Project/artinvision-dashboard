@@ -1,13 +1,20 @@
-// Command to run this file: npm run backfill:embeddings
+// Command: npm run backfill:embeddings
 import { db } from "@/lib/db";
 import {
   upsertArtistTextEmbedding,
-  upsertArtworkImageEmbedding,
   upsertArtworkTextEmbedding,
+  upsertSingleArtworkImageEmbedding,
 } from "@/lib/upsert-embeddings";
 
-const BATCH = 5;
+const BATCH_CONCURRENCY = 5;
+const LOG_EVERY = 25;
 const INCLUDE_ONLY_PUBLISHED = false;
+
+type MissingImageRow = {
+  artworkId: string;
+  artworkImageId: string;
+  url: string | null;
+};
 
 async function getMissingArtistIds(): Promise<string[]> {
   const rows = await db.$queryRawUnsafe<Array<{ id: string }>>(`
@@ -35,44 +42,50 @@ async function getMissingArtworkTextIds(): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
-async function getMissingArtworkImageIds(): Promise<string[]> {
+async function getMissingArtworkImages(): Promise<MissingImageRow[]> {
   const wherePublished = INCLUDE_ONLY_PUBLISHED
     ? `AND aw.published = TRUE`
     : ``;
-  const rows = await db.$queryRawUnsafe<Array<{ id: string }>>(`
-    SELECT aw.id
-    FROM "Artwork" aw
-    LEFT JOIN artwork_embeddings_image i ON i.artwork_id = aw.id
-    WHERE i.artwork_id IS NULL
+  const rows = await db.$queryRawUnsafe<MissingImageRow[]>(`
+    SELECT
+      ai."artworkId"   AS "artworkId",
+      ai.id            AS "artworkImageId",
+      ai.url           AS "url"
+    FROM "ArtworkImage" ai
+    JOIN "Artwork" aw
+      ON aw.id = ai."artworkId"
+    LEFT JOIN artwork_image_embeddings e
+      ON e.artwork_image_id = ai.id
+    WHERE e.artwork_image_id IS NULL
       ${wherePublished}
-      AND EXISTS (SELECT 1 FROM "ArtworkImage" im WHERE im."artworkId" = aw.id)
-    ORDER BY aw."createdAt" ASC
+    ORDER BY aw."createdAt" ASC, ai.id ASC
   `);
-  return rows.map((r) => r.id);
+  return rows;
 }
 
 async function processInBatches<T>(
-  ids: T[],
-  fn: (id: T) => Promise<void>,
+  items: T[],
+  worker: (item: T) => Promise<void>,
   label: string
 ) {
-  console.log(`\n${label}: ${ids.length} to process`);
+  console.log(`\n${label}: ${items.length} to process`);
   let done = 0,
     failed = 0;
 
-  for (let i = 0; i < ids.length; i += BATCH) {
-    const slice = ids.slice(i, i + BATCH);
+  for (let i = 0; i < items.length; i += BATCH_CONCURRENCY) {
+    const slice = items.slice(i, i + BATCH_CONCURRENCY);
     await Promise.all(
-      slice.map(async (id) => {
+      slice.map(async (item) => {
         try {
-          await fn(id);
+          await worker(item);
           done++;
-          if (done % 25 === 0)
-            console.log(`${label}: ${done}/${ids.length} done`);
+          if (done % LOG_EVERY === 0) {
+            console.log(`${label}: ${done}/${items.length} done`);
+          }
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
           failed++;
-          console.error(`${label} failed for id=${id}:`, e?.message ?? e);
+          console.error(`${label} failed:`, e?.message ?? e);
         }
       })
     );
@@ -83,11 +96,9 @@ async function processInBatches<T>(
 async function main() {
   console.log("Backfill starting…");
 
-  // Artists (artwork text includes artist info)
   const artistIds = await getMissingArtistIds();
   await processInBatches(artistIds, upsertArtistTextEmbedding, "Artist text");
 
-  // Artwork TEXT
   const artworkTextIds = await getMissingArtworkTextIds();
   await processInBatches(
     artworkTextIds,
@@ -95,12 +106,18 @@ async function main() {
     "Artwork text"
   );
 
-  //Artwork IMAGE
-  const artworkImageIds = await getMissingArtworkImageIds();
+  const missingImages = await getMissingArtworkImages();
   await processInBatches(
-    artworkImageIds,
-    upsertArtworkImageEmbedding,
-    "Artwork image"
+    missingImages,
+    async (row) => {
+      if (!row.url) return;
+      await upsertSingleArtworkImageEmbedding(
+        row.artworkId,
+        row.artworkImageId,
+        row.url
+      );
+    },
+    "Artwork image embeddings"
   );
 
   console.log("\nBackfill finished!");

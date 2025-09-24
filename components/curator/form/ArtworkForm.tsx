@@ -51,7 +51,7 @@ const ArtworkForm = ({ id, initialValues }: ArtworkFormProps) => {
         artistId: "",
         categoryId: "",
         imageUrls: [],
-        meAsArtist: false,
+        meAsArtist: true,
         ...(initialValues ?? {}),
       } as FormInput),
   });

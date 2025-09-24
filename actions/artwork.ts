@@ -7,8 +7,9 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { upsertArtistTextEmbedding } from "@/lib/embeddings/artist";
 import {
-  upsertArtworkImageEmbedding,
+  // upsertArtworkImageEmbedding,
   upsertArtworkTextEmbedding,
+  upsertAllArtworkImageEmbeddings,
 } from "@/lib/upsert-embeddings";
 import {
   ArtistArtworkInput,
@@ -117,7 +118,8 @@ export const createArtwork = async ({
 
     try {
       await upsertArtworkTextEmbedding(newArtwork.id);
-      await upsertArtworkImageEmbedding(newArtwork.id);
+      // await upsertArtworkImageEmbedding(newArtwork.id);
+      await upsertAllArtworkImageEmbeddings(newArtwork.id);
     } catch (e) {
       console.error("Embedding (createArtwork) failed", e);
     }
@@ -177,7 +179,8 @@ export async function createArtworkByArtist(input: ArtistArtworkInput) {
   });
   try {
     await upsertArtworkTextEmbedding(newArtwork.id);
-    await upsertArtworkImageEmbedding(newArtwork.id);
+    // await upsertArtworkImageEmbedding(newArtwork.id);
+    await upsertAllArtworkImageEmbeddings(newArtwork.id);
   } catch (e) {
     console.error("Embedding (createArtworkByArtist) failed", e);
   }
@@ -291,7 +294,8 @@ export async function updateArtworkByArtist(input: UpdateArtworkInput) {
   });
   try {
     await upsertArtworkTextEmbedding(id);
-    await upsertArtworkImageEmbedding(id);
+    // await upsertArtworkImageEmbedding(id);
+    await upsertAllArtworkImageEmbeddings(id);
   } catch (e) {
     console.error("Embedding (updateArtworkByArtist) failed", e);
   }
@@ -382,12 +386,32 @@ export async function deleteArtworkByArtistById(
     throw new Error("Not authorized");
   }
 
-  const result = await db.artwork.deleteMany({
+  // const result = await db.artwork.deleteMany({
+  //   where: { id: artworkId, createdById: user.id },
+  // });
+  // if (result.count === 0) {
+  //   throw new Error("Artwork not found or not your own.");
+  // }
+
+  // Below Changes is for deleting the artowork images in the S3 bucket
+  // 1) Load images BEFORE deleting rows
+  const art = await db.artwork.findFirst({
     where: { id: artworkId, createdById: user.id },
+    include: { images: { select: { id: true, url: true } } },
   });
-  if (result.count === 0) {
-    throw new Error("Artwork not found or not your own.");
-  }
+  if (!art) throw new Error("Artwork not found or not your own.");
+
+  // 2) Delete from S3 (best-effort)
+  const keys = (art.images ?? [])
+    .map((img) => urlToKey(img.url))
+    .filter(Boolean);
+  await deleteS3Keys(keys);
+
+  // 3) Delete DB rows (transaction recommended)
+  await db.$transaction([
+    db.artworkImage.deleteMany({ where: { artworkId } }), // if your model is ArtworkImage
+    db.artwork.delete({ where: { id: artworkId } }),
+  ]);
 }
 
 export async function deleteArtworkByCuratorId(
@@ -404,10 +428,69 @@ export async function deleteArtworkByCuratorId(
     throw new Error("Not authorized");
   }
 
-  const result = await db.artwork.deleteMany({
+  // const result = await db.artwork.deleteMany({
+  //   where: { id: artworkId, createdById: user.id },
+  // });
+  // if (result.count === 0) {
+  //   throw new Error("Artwork not found or not your own.");
+  // }
+
+  // Below Changes is for deleting the artowork images in the S3 bucket
+  // 1) Load images BEFORE deleting rows
+  const art = await db.artwork.findFirst({
     where: { id: artworkId, createdById: user.id },
+    include: { images: { select: { id: true, url: true } } },
   });
-  if (result.count === 0) {
-    throw new Error("Artwork not found or not your own.");
+  if (!art) throw new Error("Artwork not found or not your own.");
+
+  // 2) Delete from S3 (best-effort)
+  const keys = (art.images ?? [])
+    .map((img) => urlToKey(img.url))
+    .filter(Boolean);
+  await deleteS3Keys(keys);
+
+  // 3) Delete DB rows
+  await db.$transaction([
+    db.artworkImage.deleteMany({ where: { artworkId } }),
+    db.artwork.delete({ where: { id: artworkId } }),
+  ]);
+}
+
+// Below code is for deleting the artowrks in the S3 Bucket, once the Artworks is deleted.
+
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3 } from "@/lib/s3Client";
+
+const BUCKET =
+  process.env.S3_BUCKET_NAME || process.env.NEXT_PUBLIC_S3_BUCKET_NAME!;
+const PUBLIC_BASE = `${process.env.NEXT_PUBLIC_AWS_ENDPOINT_URL_S3}/${process.env.NEXT_PUBLIC_S3_BUCKET_NAME}`;
+
+function urlToKey(input: string): string {
+  if (!input) return "";
+  if (input.startsWith(PUBLIC_BASE + "/")) {
+    return input.slice((PUBLIC_BASE + "/").length);
   }
+
+  try {
+    const url = new URL(input);
+    const path = url.pathname.startsWith("/")
+      ? url.pathname.slice(1)
+      : url.pathname;
+    if (path.startsWith(BUCKET + "/")) return path.slice(BUCKET.length + 1);
+    return path;
+  } catch {
+    return input;
+  }
+}
+
+async function deleteS3Keys(keys: string[]) {
+  await Promise.all(
+    keys.map(async (Key) => {
+      try {
+        await S3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key }));
+      } catch (e) {
+        console.error("Failed to delete S3 object", Key, e);
+      }
+    })
+  );
 }

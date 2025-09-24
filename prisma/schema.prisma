@@ -98,10 +98,11 @@ model Artwork {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  artistRel             Artist?                @relation(fields: [artistId], references: [id])
+  artistRel             Artist?                 @relation(fields: [artistId], references: [id])
   artistId              String
   ArtworkEmbeddingText  ArtworkEmbeddingText?
   ArtworkEmbeddingImage ArtworkEmbeddingImage?
+  ArtworkImageEmbedding ArtworkImageEmbedding[]
 
   @@index([artistId])
   @@index([categoryId])
@@ -109,10 +110,11 @@ model Artwork {
 }
 
 model ArtworkImage {
-  id        String  @id @default(cuid())
-  url       String
-  artwork   Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
-  artworkId String
+  id                    String                  @id @default(cuid())
+  url                   String
+  artwork               Artwork                 @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  artworkId             String
+  ArtworkImageEmbedding ArtworkImageEmbedding[]
 
   @@index([artworkId])
 }
@@ -188,6 +190,24 @@ model ArtworkEmbeddingImage {
 
   @@map("artwork_embeddings_image")
 }
+
+// For the new image embeddign table
+model ArtworkImageEmbedding {
+  artworkImageId String                 @id @map("artwork_image_id")
+  artworkId      String                 @map("artwork_id")
+  model          String
+  embedding      Unsupported("vector")?
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  artworkImage ArtworkImage @relation(fields: [artworkImageId], references: [id], onDelete: Cascade)
+  artwork      Artwork      @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@index([artworkId], map: "artwork_image_embeddings_artwork_id_idx")
+  @@map("artwork_image_embeddings")
+}
+
+// 
 
 model ArtistEmbeddingText {
   artistId  String                @id @map("artist_id")

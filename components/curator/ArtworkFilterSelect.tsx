@@ -35,8 +35,8 @@ export function ArtworkFilterSelect() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All</SelectItem>
-          <SelectItem value="self">I’m the artist</SelectItem>
-          <SelectItem value="others">Other artists</SelectItem>
+          <SelectItem value="self">My Artworks</SelectItem>
+          <SelectItem value="others">Other Artworks</SelectItem>
         </SelectContent>
       </Select>
     </div>
