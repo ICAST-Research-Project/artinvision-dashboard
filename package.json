@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma generate && next build ",
+    "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "postinstall": "prisma generate",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:status": "prisma migrate status",
+    "db:studio": "prisma studio",
     "backfill:embeddings": "tsx -r tsconfig-paths/register scripts/backfill-missing-embeddings.ts"
   },
   "dependencies": {
