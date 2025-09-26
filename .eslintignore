@@ -1,9 +1,0 @@
-# build + deps
-.next
-node_modules
-out
-
-# prisma generated + any generated libs
-prisma/**
-lib/generated/**
-lib/generated/prisma/**

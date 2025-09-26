@@ -10,6 +10,7 @@
     "migrate:deploy": "prisma migrate deploy",
     "migrate:status": "prisma migrate status",
     "db:studio": "prisma studio",
+    "lint": "next lint",
     "backfill:embeddings": "tsx -r tsconfig-paths/register scripts/backfill-missing-embeddings.ts"
   },
   "dependencies": {
