@@ -17,7 +17,7 @@ export function Header() {
     "
     >
       <div className="flex items-center justify-between space-x-16">
-        <h1 className="text-xl font-bold text-orange-600 ">Museum</h1>
+        <h1 className="text-xl font-bold text-orange-600 ">Art Connect</h1>
         <LoginButton>
           <Button
             variant="outline"
