@@ -73,8 +73,8 @@ export const RegisterForm = () => {
                   <FormControl>
                     <select {...field} className="w-full border rounded p-2">
                       <option value="MUSEUM_ADMIN">Museum Admin</option>
-                      <option value="CURATOR">Curator</option>
-                      <option value="ARTIST">Artist</option>
+                      <option value="CURATOR">Curator / Artist</option>
+                      {/* <option value="ARTIST">Artist</option> */}
                     </select>
                   </FormControl>
                   <FormMessage />

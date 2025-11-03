@@ -24,7 +24,7 @@ export function Header() {
             size="sm"
             className="text-orange-600 border-orange-600 hover:bg-orange-600 hover:text-white transition"
           >
-            Start Your Art Journey
+            Get Started
           </Button>
         </LoginButton>
       </div>

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Museum",
+  title: "Art Connect",
   description: "Dashboard to Manage Artworks",
 };
 

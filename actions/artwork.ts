@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { auth } from "@/auth";
@@ -20,6 +21,107 @@ import {
   updateArtworkSchema,
 } from "@/schemas";
 import { AccountType } from "@prisma/client";
+
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import QRCode from "qrcode";
+
+// ===== Dedicated QR bucket (fallbacks to the main one if unset)
+const QR_BUCKET = process.env.NEXT_PUBLIC_S3_BUCKET_NAME_QR; // your QR bucket
+
+// Build the public base for the QR bucket
+const QR_PUBLIC_BASE =
+  (process.env.NEXT_PUBLIC_AWS_ENDPOINT_URL_S3_QR
+    ? `${process.env.NEXT_PUBLIC_AWS_ENDPOINT_URL_S3_QR}`
+    : `${process.env.NEXT_PUBLIC_AWS_ENDPOINT_URL_S3}`
+  ).replace(/\/+$/, "") +
+  "/" +
+  (process.env.NEXT_PUBLIC_S3_BUCKET_NAME_QR ||
+    process.env.NEXT_PUBLIC_S3_BUCKET_NAME);
+
+// Where QR points (later your /qr page will read ?aid=...)
+const QR_TARGET_BASE =
+  process.env.NEXT_PUBLIC_QR_TARGET_BASE ||
+  (process.env.NEXT_PUBLIC_APP_BASE_URL
+    ? `${process.env.NEXT_PUBLIC_APP_BASE_URL}/qr`
+    : "https://example.com/qr");
+
+/** Build the URL the QR points to, e.g. https://app/qr?aid=<artworkId> */
+function makeQrTargetUrl(artworkId: string): string {
+  const url = new URL(QR_TARGET_BASE);
+  url.searchParams.set("aid", artworkId);
+  return url.toString();
+}
+
+/** Generate a PNG buffer for a QR code */
+async function generateQrPng(text: string): Promise<Buffer> {
+  return QRCode.toBuffer(text, {
+    errorCorrectionLevel: "M",
+    width: 512,
+    margin: 2,
+    type: "png",
+    color: { dark: "#000000", light: "#FFFFFF" },
+  });
+}
+
+async function uploadQrToS3(key: string, png: Buffer): Promise<string> {
+  await S3.send(
+    new PutObjectCommand({
+      Bucket: QR_BUCKET, // ← QR bucket
+      Key: key,
+      Body: png,
+      ContentType: "image/png",
+      // Tip: if an <img> preview ever triggers a download instead of displaying,
+      // remove ContentDisposition below and rely on <a download> in the UI.
+      ContentDisposition: `attachment; filename="${key.split("/").pop()}"`,
+      // ACL: "public-read", // only if your bucket policy isn’t already public
+    })
+  );
+  return `${QR_PUBLIC_BASE}/${key}`;
+}
+
+/** Create + upload QR, then persist on the artwork row */
+async function generateAndSaveArtworkQr(artworkId: string) {
+  const target = makeQrTargetUrl(artworkId);
+  const png = await generateQrPng(target);
+  const key = `qr/artworks/${artworkId}.png`;
+  const publicUrl = await uploadQrToS3(key, png);
+
+  await db.artwork.update({
+    where: { id: artworkId },
+    data: { qrCodeUrl: publicUrl },
+  });
+
+  return publicUrl;
+}
+
+function qrUrlToKey(input?: string | null): string {
+  if (!input) return "";
+  // 1) Fast path: strip the known public base
+  if (input.startsWith(QR_PUBLIC_BASE + "/")) {
+    return input.slice((QR_PUBLIC_BASE + "/").length);
+  }
+  // 2) Fallback: parse URL and remove bucket prefix if present
+  try {
+    const url = new URL(input);
+    const path = url.pathname.startsWith("/")
+      ? url.pathname.slice(1)
+      : url.pathname;
+    if (QR_BUCKET && path.startsWith(QR_BUCKET + "/"))
+      return path.slice(QR_BUCKET.length + 1);
+    return path; // key-only path
+  } catch {
+    return input; // best effort
+  }
+}
+
+async function deleteQrKey(key: string) {
+  if (!key) return;
+  try {
+    await S3.send(new DeleteObjectCommand({ Bucket: QR_BUCKET, Key: key }));
+  } catch (e) {
+    console.error("Failed to delete QR from S3", key, e);
+  }
+}
 
 export type artworkParams = {
   title: string;
@@ -124,7 +226,18 @@ export const createArtwork = async ({
       console.error("Embedding (createArtwork) failed", e);
     }
 
-    return { success: true, data: JSON.parse(JSON.stringify(newArtwork)) };
+    try {
+      await generateAndSaveArtworkQr(newArtwork.id);
+    } catch (e) {
+      console.error("QR generation failed", e);
+    }
+
+    const fresh = await db.artwork.findUniqueOrThrow({
+      where: { id: newArtwork.id },
+      include: { images: true },
+    });
+
+    return { success: true, data: JSON.parse(JSON.stringify(fresh)) };
   } catch (error) {
     console.error(error);
     return {
@@ -185,6 +298,12 @@ export async function createArtworkByArtist(input: ArtistArtworkInput) {
     console.error("Embedding (createArtworkByArtist) failed", e);
   }
 
+  try {
+    await generateAndSaveArtworkQr(newArtwork.id);
+  } catch (e) {
+    console.error("QR generation failed", e);
+  }
+
   return { success: true, data: JSON.parse(JSON.stringify(newArtwork)) };
 }
 
@@ -232,26 +351,54 @@ export async function getAllArtworks(filter: ArtworkFilter = "all") {
     include: {
       category: { select: { id: true, name: true } },
       images: { select: { id: true, url: true } },
+
       artistRel: { select: { id: true, name: true, userId: true } },
     },
   });
 }
 
+// export async function getArtworkById(id: string) {
+//   const user = await getCurrentUser();
+//   return await db.artwork.findUniqueOrThrow({
+//     where: { id, createdById: user.id },
+//     include: {
+//       category: { select: { id: true, name: true } },
+//       images: { select: { id: true, url: true } },
+
+//       artistRel: {
+//         select: {
+//           id: true,
+//           name: true,
+//         },
+//       },
+//     },
+//   });
+// }
+
 export async function getArtworkById(id: string) {
   const user = await getCurrentUser();
-  return await db.artwork.findUniqueOrThrow({
-    where: { id, createdById: user.id },
-    include: {
+
+  const art = await db.artwork.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      createdById: true,
+      qrCodeUrl: true,
       category: { select: { id: true, name: true } },
       images: { select: { id: true, url: true } },
-      artistRel: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
+      artistRel: { select: { id: true, name: true } },
     },
   });
+
+  if (!art || art.createdById !== user.id) {
+    throw new Error("Not found or not allowed");
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { createdById, ...rest } = art;
+  return rest;
 }
 
 export async function toggleArtworkPublished(id: string, published: boolean) {
@@ -406,6 +553,8 @@ export async function deleteArtworkByArtistById(
     .map((img) => urlToKey(img.url))
     .filter(Boolean);
   await deleteS3Keys(keys);
+  const qrKey = qrUrlToKey((art as any).qrCodeUrl);
+  await deleteQrKey(qrKey);
 
   // 3) Delete DB rows (transaction recommended)
   await db.$transaction([
@@ -448,6 +597,8 @@ export async function deleteArtworkByCuratorId(
     .map((img) => urlToKey(img.url))
     .filter(Boolean);
   await deleteS3Keys(keys);
+  const qrKey = qrUrlToKey((art as any).qrCodeUrl);
+  await deleteQrKey(qrKey);
 
   // 3) Delete DB rows
   await db.$transaction([
@@ -458,7 +609,6 @@ export async function deleteArtworkByCuratorId(
 
 // Below code is for deleting the artowrks in the S3 Bucket, once the Artworks is deleted.
 
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { S3 } from "@/lib/s3Client";
 
 const BUCKET =

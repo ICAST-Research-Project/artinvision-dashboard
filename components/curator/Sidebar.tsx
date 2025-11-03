@@ -31,7 +31,7 @@ export default function Sidebar({ session }: SidebarProps) {
         <div className="flex items-center gap-2 border-b border-dashed border-primary-admin/20 pb-10 max-md:justify-center">
           <Image src="/account.png" alt="logo" height={37} width={37} />
           <h1 className="text-2xl font-semibold text-primary-admin max-md:hidden">
-            Curator Account
+            Art Connect
           </h1>
         </div>
 

@@ -45,11 +45,11 @@ export const artistSidebarLinks = [
 ];
 
 export const curatorSidebarLinks = [
-  {
-    img: "/home.png",
-    route: "/curator",
-    text: "Home",
-  },
+  // {
+  //   img: "/home.png",
+  //   route: "/curator",
+  //   text: "Home",
+  // },
   {
     img: "/collection.png",
     route: "/curator/collections",

@@ -104,6 +104,8 @@ model Artwork {
   ArtworkEmbeddingImage ArtworkEmbeddingImage?
   ArtworkImageEmbedding ArtworkImageEmbedding[]
 
+  qrCodeUrl String?
+
   @@index([artistId])
   @@index([categoryId])
   @@index([published])
