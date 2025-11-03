@@ -26,9 +26,9 @@ const EditPage = async ({ params }: EditPageProps) => {
         initialValues={{
           title: art.title,
           description: art.description,
-          categoryId: art.categoryId,
+          categoryId: art.category.id,
           imageUrls: art.images.map((i) => i.url),
-          artistId: art.artistId ?? "",
+          artistId: art.id ?? "",
           meAsArtist: false,
         }}
       />
