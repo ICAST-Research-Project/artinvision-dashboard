@@ -41,7 +41,7 @@ const Page = async () => {
   return (
     <section className="w-full rounded-2xl bg-white p-7">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-semibold">All Artworks</h2>
+        <h2 className="text-2xl font-bold">All Artworks</h2>
         <div className="flex gap-2">
           <Button className="bg-blue-500" asChild>
             <Link href="/museum/artworks/new" className="text-white">
@@ -49,6 +49,24 @@ const Page = async () => {
             </Link>
           </Button>
         </div>
+      </div>
+      <div className="">
+        <ul role="list" className="mt-2 space-y-8 text-gray-600 text-justify">
+          <li className="flex gap-x-3">
+            <span>
+              Here, you will able to upload new artowrks and manage all of the
+              artworks uploaded by this account.
+            </span>
+          </li>
+          <li className="flex gap-x-3">
+            <span>
+              <strong className="font-semibold text-gray-900">
+                Add Artworks:
+              </strong>{" "}
+              you will able to upload new artowrks.
+            </span>
+          </li>
+        </ul>
       </div>
       <ListWrapper initialData={data} categories={categories} />
     </section>

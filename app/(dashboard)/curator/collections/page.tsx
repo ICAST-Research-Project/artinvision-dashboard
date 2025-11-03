@@ -4,7 +4,7 @@ import React from "react";
 import { DataTable } from "./data-table";
 import { Collection, columns } from "./columns";
 import { fetchCollectionsForUser } from "@/actions/collections";
-
+  
 const page = async () => {
   const data: Collection[] = await fetchCollectionsForUser();
   return (

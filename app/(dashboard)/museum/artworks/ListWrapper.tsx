@@ -21,7 +21,7 @@ export default function ListWrapper({
   };
 
   return (
-    <div className="mt-7 w-full overflow-hidden">
+    <div className="mt-2 w-full overflow-hidden">
       <DataTable
         columns={columns({ onToggle: handleToggle })}
         data={data}

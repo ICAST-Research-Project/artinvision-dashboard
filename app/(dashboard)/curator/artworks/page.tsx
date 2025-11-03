@@ -34,7 +34,7 @@ const Page = async ({ searchParams }: PageProps) => {
           </Button>
         </div>
       </div>
-
+  
       <div className="mb-4">
         <ul role="list" className="mt-2 space-y-8 text-gray-600 text-justify">
           <li className="flex gap-x-3">

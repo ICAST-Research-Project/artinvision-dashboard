@@ -1,9 +1,9 @@
 export const museumAdminSidebarLinks = [
-  {
-    img: "/home.png",
-    route: "/museum",
-    text: "Home",
-  },
+  // {
+  //   img: "/home.png",
+  //   route: "/museum",
+  //   text: "Home",
+  // },
   {
     img: "/artworks.png",
     route: "/museum/artworks",
