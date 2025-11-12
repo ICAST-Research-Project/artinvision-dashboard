@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
+import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { getUserById } from "@/data/user";
@@ -388,7 +389,8 @@ export async function getArtworkById(id: string) {
       qrCodeUrl: true,
       category: { select: { id: true, name: true } },
       images: { select: { id: true, url: true } },
-      artistRel: { select: { id: true, name: true } },
+      artistId: true,
+      artistRel: { select: { id: true, name: true, userId: true } },
     },
   });
 
@@ -396,9 +398,13 @@ export async function getArtworkById(id: string) {
     throw new Error("Not found or not allowed");
   }
 
+  // derive whether the logged-in user is the artist for this artwork
+  const meAsArtistSuggested =
+    !!art.artistRel?.userId && art.artistRel.userId === user.id;
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { createdById, ...rest } = art;
-  return rest;
+  return { rest, meAsArtistSuggested };
 }
 
 export async function toggleArtworkPublished(id: string, published: boolean) {
@@ -450,13 +456,125 @@ export async function updateArtworkByArtist(input: UpdateArtworkInput) {
   return { success: true, data: JSON.parse(JSON.stringify(updated)) };
 }
 
+// export const updateArtworkByCurator = async ({
+//   id,
+//   title,
+//   artistId,
+//   description,
+//   categoryId,
+
+//   imageUrls,
+//   meAsArtist,
+// }: { id: string } & artworkParams) => {
+//   const auth = await getCurrentUser();
+//   if (!auth) return { success: false, message: "Unauthorized" };
+//   const { id: userId } = auth;
+
+//   const existing = await db.artwork.findUnique({
+//     where: { id },
+//     select: {
+//       createdById: true,
+//       artistId: true,
+//       images: { select: { url: true } },
+//     },
+//   });
+//   if (!existing || existing.createdById !== userId) {
+//     return { success: false, message: "Not found or not allowed" };
+//   }
+
+//   const [u, curator] = await Promise.all([
+//     db.user.findUnique({
+//       where: { id: userId },
+//       select: { name: true, email: true },
+//     }),
+//     db.curator.findUnique({ where: { userId }, select: { about: true } }),
+//   ]);
+//   const displayName =
+//     (u?.name && u.name.trim()) ||
+//     (u?.email ? u.email.split("@")[0] : null) ||
+//     "Untitled Artist";
+//   const bioText = curator?.about ?? "";
+
+//   // Normalize incoming artistId (empty string → undefined)
+//   const normalizeId = (s?: string | null) =>
+//     s && s.trim().length ? s : undefined;
+
+//   let finalArtistId = existing.artistId;
+//   const incomingArtistId = normalizeId(artistId);
+
+//   if (meAsArtist) {
+//     const me = await db.artist.upsert({
+//       where: { userId },
+//       update: { name: displayName, bio: bioText },
+//       create: { userId, name: displayName, bio: bioText },
+//       select: { id: true },
+//     });
+//     finalArtistId = me.id;
+
+//     try {
+//       await upsertArtistTextEmbedding(me.id);
+//     } catch (e) {
+//       console.error("Embedding (artist text) failed", e);
+//     }
+//   } else if (incomingArtistId) {
+//     // Optional: validate the selected artist exists to avoid FK errors
+//     const exists = await db.artist.findUnique({
+//       where: { id: incomingArtistId },
+//       select: { id: true },
+//     });
+//     if (!exists) {
+//       return { success: false, message: "Selected artist no longer exists." };
+//     }
+//     finalArtistId = incomingArtistId;
+//   }
+
+//   if (!finalArtistId) {
+//     return {
+//       success: false,
+//       message: 'Artist is required (pick one or choose "I’m the artist").',
+//     };
+//   }
+
+//   const incoming = new Set(
+//     (imageUrls ?? []).map((u) => u.trim()).filter(Boolean)
+//   );
+//   const already = new Set((existing.images ?? []).map((i) => i.url));
+//   const newOnly = [...incoming].filter((u) => !already.has(u));
+
+//   // Build images mutation: APPEND new ones (don’t delete existing)
+//   // const imagesMutation =
+//   //   imageUrls && imageUrls.length
+//   //     ? { create: imageUrls.map((url) => ({ url })) }
+//   //     : undefined;
+//   const imagesMutation = newOnly.length
+//     ? { create: newOnly.map((url) => ({ url })) }
+//     : undefined;
+
+//   const updated = await db.artwork.update({
+//     where: { id },
+//     data: {
+//       title,
+//       description,
+//       categoryId,
+//       artistId: finalArtistId,
+//       ...(imagesMutation ? { images: imagesMutation } : {}), // append if provided
+//     },
+//     include: { images: true },
+//   });
+
+//   try {
+//     await upsertArtworkTextEmbedding(updated.id);
+//     await upsertAllArtworkImageEmbeddings(updated.id);
+//   } catch {}
+//   return { success: true, data: JSON.parse(JSON.stringify(updated)) };
+// };
+
 export const updateArtworkByCurator = async ({
   id,
   title,
   artistId,
   description,
   categoryId,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   imageUrls,
   meAsArtist,
 }: { id: string } & artworkParams) => {
@@ -464,6 +582,20 @@ export const updateArtworkByCurator = async ({
   if (!auth) return { success: false, message: "Unauthorized" };
   const { id: userId } = auth;
 
+  // Load existing (owner + current artist + existing images)
+  const existing = await db.artwork.findUnique({
+    where: { id },
+    select: {
+      createdById: true,
+      artistId: true,
+      images: { select: { url: true } },
+    },
+  });
+  if (!existing || existing.createdById !== userId) {
+    return { success: false, message: "Not found or not allowed" };
+  }
+
+  // Curator's display name/bio (for meAsArtist upsert)
   const [u, curator] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
@@ -477,7 +609,12 @@ export const updateArtworkByCurator = async ({
     "Untitled Artist";
   const bioText = curator?.about ?? "";
 
-  let finalArtistId: string | null = artistId || null;
+  // Normalize incoming artistId
+  const normalizeId = (s?: string | null) =>
+    s && s.trim().length ? s : undefined;
+
+  let finalArtistId = existing.artistId;
+  const incomingArtistId = normalizeId(artistId);
 
   if (meAsArtist) {
     const me = await db.artist.upsert({
@@ -493,6 +630,15 @@ export const updateArtworkByCurator = async ({
     } catch (e) {
       console.error("Embedding (artist text) failed", e);
     }
+  } else if (incomingArtistId) {
+    const exists = await db.artist.findUnique({
+      where: { id: incomingArtistId },
+      select: { id: true },
+    });
+    if (!exists) {
+      return { success: false, message: "Selected artist no longer exists." };
+    }
+    finalArtistId = incomingArtistId;
   }
 
   if (!finalArtistId) {
@@ -502,21 +648,63 @@ export const updateArtworkByCurator = async ({
     };
   }
 
-  const updated = await db.artwork.update({
+  // --- Image reconciliation ---
+  const incoming = (imageUrls ?? []).map((u) => u.trim()).filter(Boolean);
+  const existingUrls = new Set((existing.images ?? []).map((i) => i.url));
+  const incomingSet = new Set(incoming);
+
+  const toCreate = incoming.filter((u) => !existingUrls.has(u));
+  const toDelete = (existing.images ?? [])
+    .filter((i) => !incomingSet.has(i.url))
+    .map((i) => i.url);
+
+  // Transaction: update main fields + delete missing + add new
+  await db.$transaction([
+    db.artwork.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        categoryId,
+        artistId: finalArtistId,
+      },
+    }),
+    ...(toDelete.length
+      ? [
+          db.artworkImage.deleteMany({
+            where: { artworkId: id, url: { in: toDelete } },
+          }),
+        ]
+      : []),
+    ...(toCreate.length
+      ? [
+          db.artworkImage.createMany({
+            data: toCreate.map((url) => ({ artworkId: id, url })),
+            skipDuplicates: true,
+          }),
+        ]
+      : []),
+  ]);
+
+  // Re-embed (optional but recommended)
+  try {
+    await upsertArtworkTextEmbedding(id);
+    await upsertAllArtworkImageEmbeddings(id);
+  } catch (e) {
+    console.error("Embedding (updateArtworkByCurator) failed", e);
+  }
+
+  // Revalidate pages so you don’t see stale images
+  revalidatePath(`/curator/artworks/${id}`);
+  revalidatePath(`/curator/artworks`);
+
+  // Return fresh
+  const fresh = await db.artwork.findUnique({
     where: { id },
-    data: {
-      title,
-      description,
-      categoryId,
-      artistId: finalArtistId,
-    },
-    include: { images: true },
+    include: { images: true, category: { select: { id: true, name: true } } },
   });
 
-  try {
-    await upsertArtworkTextEmbedding(updated.id);
-  } catch {}
-  return { success: true, data: JSON.parse(JSON.stringify(updated)) };
+  return { success: true, data: JSON.parse(JSON.stringify(fresh)) };
 };
 
 export async function deleteArtworkByArtistById(
@@ -602,6 +790,7 @@ export async function deleteArtworkByCuratorId(
 
   // 3) Delete DB rows
   await db.$transaction([
+    db.collectionArtwork.deleteMany({ where: { artworkId } }), // ← delete joins first
     db.artworkImage.deleteMany({ where: { artworkId } }),
     db.artwork.delete({ where: { id: artworkId } }),
   ]);

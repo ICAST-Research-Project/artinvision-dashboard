@@ -26,6 +26,7 @@ import { Uploader } from "./Uploader";
 import Dropdown from "./Dropdown";
 import { ArtistSelect } from "./ArtistSelect";
 import { Switch } from "@/components/ui/switch";
+import { useEffect, useRef } from "react";
 
 type FormInput = z.input<typeof artworkSchema>;
 type FormOutput = z.output<typeof artworkSchema>;
@@ -52,12 +53,34 @@ const ArtworkForm = ({ id, initialValues }: ArtworkFormProps) => {
         categoryId: "",
         imageUrls: [],
         meAsArtist: true,
-        ...(initialValues ?? {}),
+        // ...(initialValues ?? {}),
       } as FormInput),
   });
 
+  // 1) Reset once on mount with server-provided values (ensures select is prefilled)
+  useEffect(() => {
+    if (initialValues) form.reset(initialValues);
+  }, [initialValues, form]);
+
   const { isSubmitting } = form.formState;
   const meAsArtist = form.watch("meAsArtist");
+
+  // 2) Remember previously selected artist to restore after toggling meAsArtist
+  const rememberedArtistId = useRef<string>(initialValues?.artistId ?? "");
+  useEffect(() => {
+    if (meAsArtist) {
+      // store current, then clear while "I'm the artist" is ON
+      rememberedArtistId.current =
+        form.getValues("artistId") || rememberedArtistId.current;
+      form.setValue("artistId", "", { shouldValidate: true });
+    } else {
+      // restore previous artist id when turned OFF
+      const toRestore =
+        rememberedArtistId.current || initialValues?.artistId || "";
+      form.setValue("artistId", toRestore, { shouldValidate: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meAsArtist]);
 
   const onSubmit = async (values: FormOutput) => {
     try {

@@ -29,43 +29,43 @@ export default async function ArtworkPage({
         </Button>
       </div>
 
-      <h1 className="text-3xl font-bold">Title: {art.title}</h1>
-      <Badge variant="secondary">{art.category.name}</Badge>
+      <h1 className="text-3xl font-bold">Title: {art.rest.title}</h1>
+      <Badge variant="secondary">{art.rest.category.name}</Badge>
 
       <div className="flex items-center gap-2">
         <h1 className="font-semibold">Artist Name:</h1>
         <span className="text-lg text-muted-foreground">
-          {art.artistRel?.name}
+          {art.rest.artistRel?.name}
         </span>
       </div>
 
       <h1 className="font-semibold">Description:</h1>
       <p className="text-base leading-relaxed text-justify">
-        {art.description}
+        {art.rest.description}
       </p>
 
       {/* QR section */}
-      {art.qrCodeUrl ? (
+      {art.rest.qrCodeUrl ? (
         <section className="rounded-lg border p-4">
           <h3 className="text-lg font-semibold mb-3">QR Code</h3>
           <div className="flex items-center gap-16">
             <Image
-              src={art.qrCodeUrl}
-              alt={`QR for ${art.title}`}
+              src={art.rest.qrCodeUrl}
+              alt={`QR for ${art.rest.title}`}
               className="rounded-md border bg-white"
               width={200}
               height={200}
             />
             <div className="flex flex-row gap-6">
               <a
-                href={`/api/qr/download?aid=${art.id}`}
-                download={`artwork-${art.id}-qr.png`}
+                href={`/api/qr/download?aid=${art.rest.id}`}
+                download={`artwork-${art.rest.id}-qr.png`}
                 className="inline-flex gap-3 items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
               >
                 Download <IoMdDownload size={25} className="mt-1" />
               </a>
               <a
-                href={art.qrCodeUrl}
+                href={art.rest.qrCodeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex gap-3 items-center justify-center rounded-md border px-4 py-2 hover:bg-gray-50"
@@ -82,8 +82,8 @@ export default async function ArtworkPage({
       )}
       {/* ArtworkImages section */}
       <h1 className="font-semibold">Artwork Images:</h1>
-      {art.images.length > 0 && (
-        <ImageCarousel images={art.images.map((i) => i.url)} />
+      {art.rest.images.length > 0 && (
+        <ImageCarousel images={art.rest.images.map((i) => i.url)} />
       )}
     </div>
   );

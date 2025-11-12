@@ -13,6 +13,8 @@ const EditPage = async ({ params }: EditPageProps) => {
   const { id } = await params;
   const art = await getArtworkById(id);
 
+  const meAsArtist = art.meAsArtistSuggested; // ← from action
+
   return (
     <div>
       <div className="flex justify-start pb-5">
@@ -24,12 +26,12 @@ const EditPage = async ({ params }: EditPageProps) => {
       <ArtworkForm
         id={id}
         initialValues={{
-          title: art.title,
-          description: art.description,
-          categoryId: art.category.id,
-          imageUrls: art.images.map((i) => i.url),
-          artistId: art.id ?? "",
-          meAsArtist: false,
+          title: art.rest.title,
+          description: art.rest.description,
+          categoryId: art.rest.category.id,
+          imageUrls: art.rest.images.map((i) => i.url),
+          artistId: meAsArtist ? "" : (art.rest.artistId ?? ""),
+          meAsArtist,
         }}
       />
     </div>

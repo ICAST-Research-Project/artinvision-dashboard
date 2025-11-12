@@ -187,12 +187,14 @@ export function Uploader({ value, onUploadComplete }: UploaderProps) {
     }
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     onDropRejected: onReject,
     maxFiles: 5,
     maxSize: 1024 * 1024 * 5,
     accept: { "image/*": [] },
+    noClick: true,
+    noKeyboard: true,
   });
 
   return (
@@ -213,7 +215,9 @@ export function Uploader({ value, onUploadComplete }: UploaderProps) {
           ) : (
             <div className="text-center">
               <p>Drag & drop or click to select images</p>
-              <Button>Select files</Button>
+              <Button type="button" onClick={open} variant="secondary">
+                Select files
+              </Button>
             </div>
           )}
         </CardContent>
