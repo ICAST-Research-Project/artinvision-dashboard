@@ -220,6 +220,7 @@ export async function getCollectionById(id: string) {
             include: {
               category: true,
               images: { select: { url: true } },
+              artistRel: { select: { name: true } },
             },
           },
         },

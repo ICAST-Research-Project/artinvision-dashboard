@@ -227,11 +227,11 @@ export const createArtwork = async ({
       console.error("Embedding (createArtwork) failed", e);
     }
 
-    try {
-      await generateAndSaveArtworkQr(newArtwork.id);
-    } catch (e) {
-      console.error("QR generation failed", e);
-    }
+    // try {
+    //   await generateAndSaveArtworkQr(newArtwork.id);
+    // } catch (e) {
+    //   console.error("QR generation failed", e);
+    // }
 
     const fresh = await db.artwork.findUniqueOrThrow({
       where: { id: newArtwork.id },

@@ -46,11 +46,11 @@ export const RegisterSchema = z.discriminatedUnion("accountType", [
 
 export const artworkSchema = z
   .object({
-    title: z.string().trim().min(2).max(100),
-    description: z.string().min(10),
+    title: z.string().trim().min(2, "Title is required").max(100),
+    description: z.string().min(10, "Description is required"),
     artistId: z.string().optional().default(""),
     imageUrls: z.array(z.url()).min(1, "Upload at least one image"),
-    categoryId: z.string(),
+    categoryId: z.string().min(1, "Please select a category"),
     meAsArtist: z.boolean().optional().default(false),
   })
   .refine((v) => v.meAsArtist || !!v.artistId, {

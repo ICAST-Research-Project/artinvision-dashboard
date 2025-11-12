@@ -137,7 +137,6 @@ const ArtworkForm = ({ id, initialValues }: ArtworkFormProps) => {
               <FormLabel>Description</FormLabel>
               <FormControl>
                 <Textarea
-                  required
                   placeholder="description"
                   {...field}
                   className="min-h-12 border border-gray-100 bg-light-600 p-4 text-base font-semibold placeholder:font-normal placeholder:text-slate-500"
