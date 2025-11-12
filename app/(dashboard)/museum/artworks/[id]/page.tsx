@@ -27,20 +27,20 @@ export default async function ArtworkPage(props: {
           <Link href="/museum/artworks">Go Back</Link>
         </Button>
       </div>
-      <h1 className="text-3xl font-bold">Title: {art.title}</h1>
-      <Badge variant="secondary">{art.category.name}</Badge>
+      <h1 className="text-3xl font-bold">Title: {art.rest.title}</h1>
+      <Badge variant="secondary">{art.rest.category.name}</Badge>
       <div className="flex items-center gap-2">
         <h1 className="font-semibold">Artist Name: </h1>
         <span className="text-lg text-muted-foreground">
-          {art.artistRel?.name}
+          {art.rest.artistRel?.name}
         </span>
       </div>
 
       <h1 className="font-semibold">Description:</h1>
-      <p className="text-base leading-relaxed">{art.description}</p>
+      <p className="text-base leading-relaxed">{art.rest.description}</p>
       <h1 className="font-semibold">Artwork Images:</h1>
-      {art.images.length > 0 && (
-        <ImageCarousel images={art.images.map((i) => i.url)} />
+      {art.rest.images.length > 0 && (
+        <ImageCarousel images={art.rest.images.map((i) => i.url)} />
       )}
     </div>
   );
